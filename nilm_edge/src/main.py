@@ -153,6 +153,7 @@ async def publish_disaggregation_dl(
                 "unit_of_measurement": "kWh",
                 "device_class": "energy",
                 "state_class": "total_increasing",
+                "suggested_display_precision": 2,
                 "friendly_name": f"NILM {display_name.replace('_', ' ').title()} Energy Consumed{bundle_label}",
                 "last_updated": timestamp.isoformat(),
                 "source": "dl",

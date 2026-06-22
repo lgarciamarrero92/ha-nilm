@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.5.3
+
+- Display native NILM energy values with two decimal places in Home Assistant cards while retaining full stored precision.
+
 ## 1.1.5.2
 
 - Show each live model's native energy-consumed entity in its dashboard card.
