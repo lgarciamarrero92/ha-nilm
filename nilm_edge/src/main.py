@@ -11,6 +11,7 @@ import websockets
 
 import app_state
 from embedding_store import save_embedding_npy
+from energy_accumulator import EnergyAccumulator
 from power_units import normalize_power_to_watts
 from routes_config import register_config_routes
 from routes_ha import register_ha_routes
@@ -20,6 +21,7 @@ from training_server_service import TrainingServerServiceManager
 
 
 running = True
+energy_accumulator = EnergyAccumulator("/data/nilm_energy.json")
 
 
 def shutdown_handler(sig, frame):
@@ -115,6 +117,14 @@ async def publish_disaggregation_dl(
         appliance_prediction_delay_s = float(values.get("prediction_delay_s", prediction_delay_s) or 0.0)
         appliance_pred_idx = values.get("pred_idx", pred_idx)
         power_entity_id = f"sensor.nilm_{slug}_power"
+        # Keep this distinct from the common user-created integral helper name
+        # (sensor.nilm_<appliance>_energy) so upgrades cannot overwrite it.
+        energy_entity_id = f"sensor.nilm_{slug}_energy_consumed"
+        energy_update = energy_accumulator.update(
+            appliance_key=energy_entity_id,
+            power_w=power,
+            timestamp_s=timestamp.timestamp(),
+        )
         power_data = {
             "state": round(power, 1),
             "attributes": {
@@ -136,6 +146,23 @@ async def publish_disaggregation_dl(
             },
         }
         publish_tasks.append(post_state(power_entity_id, power_data))
+
+        energy_data = {
+            "state": round(energy_update.total_kwh, 9),
+            "attributes": {
+                "unit_of_measurement": "kWh",
+                "device_class": "energy",
+                "state_class": "total_increasing",
+                "friendly_name": f"NILM {display_name.replace('_', ' ').title()} Energy Consumed{bundle_label}",
+                "last_updated": timestamp.isoformat(),
+                "source": "dl",
+                "integration_method": "trapezoidal",
+                "integration_gap_s": round(energy_update.integration_gap_s, 3),
+                "skipped_stale_gap": energy_update.skipped_stale_gap,
+                "icon": "mdi:lightning-bolt",
+            },
+        }
+        publish_tasks.append(post_state(energy_entity_id, energy_data))
 
         is_on = onoff >= onoff_threshold
         on_entity_id = f"binary_sensor.nilm_{slug}_on"

@@ -1,9 +1,9 @@
 name: "NILM"
-version: "1.1.5"
+version: "1.1.5.1"
 slug: "nilm"
 description: "Non-Intrusive Load Monitoring For Home Assistant"
 url: "https://ha-nilm.bigwicho.com/"
-image: "ghcr.io/lgarciamarrero92/ha-nilm-edge"
+#image: "ghcr.io/lgarciamarrero92/ha-nilm-edge"
 homeassistant_api: true
 hassio_api: true
 hassio_role: manager

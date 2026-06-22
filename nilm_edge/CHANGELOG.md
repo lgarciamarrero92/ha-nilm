@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.5.1
+
+- Publish persistent per-appliance cumulative energy sensors for use in the Home Assistant Energy dashboard.
+
 ## 1.1.5
 
 - Added support for mains and appliance power sensors reported in `kW` by normalizing them to `W` across training and live disaggregation.
