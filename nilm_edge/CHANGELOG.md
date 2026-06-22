@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.5.2
+
+- Show each live model's native energy-consumed entity in its dashboard card.
+
 ## 1.1.5.1
 
 - Publish persistent per-appliance cumulative energy sensors for use in the Home Assistant Energy dashboard.

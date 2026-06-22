@@ -1977,6 +1977,7 @@
         const suffix = bundleSlug ? `${applianceSlug}_${bundleSlug}` : applianceSlug;
         return {
             power: `sensor.nilm_${suffix}_power`,
+            energy: `sensor.nilm_${suffix}_energy_consumed`,
             state: `binary_sensor.nilm_${suffix}_on`,
         };
     }
@@ -3725,6 +3726,7 @@
                     <div class="embedding-entities">
                         <div class="embedding-entities-label">Home Assistant Entities</div>
                         <div class="embedding-entity-name">${realtimeEntities.power}</div>
+                        <div class="embedding-entity-name">${realtimeEntities.energy}</div>
                         <div class="embedding-entity-name">${realtimeEntities.state}</div>
                     </div>
                 `
