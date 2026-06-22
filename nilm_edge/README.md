@@ -4,7 +4,7 @@
 
 This app runs real-time NILM inference inside Home Assistant.
 
-It monitors one mains power sensor, applies trained appliance models, and publishes live appliance power and on/off entities back to Home Assistant.
+It monitors one mains power sensor, applies trained appliance models, and publishes live appliance power, cumulative energy-consumed, and on/off entities back to Home Assistant.
 
 NILM provides estimation from aggregate mains data, not direct per-appliance measurement.
 
@@ -44,6 +44,7 @@ Notes:
 For each model enabled for live publishing:
 
 - `sensor.nilm_<appliance>_power`
+- `sensor.nilm_<appliance>_energy_consumed` (cumulative `kWh`, compatible with the Home Assistant Energy dashboard)
 - `binary_sensor.nilm_<appliance>_on`
 
 ## Requirements

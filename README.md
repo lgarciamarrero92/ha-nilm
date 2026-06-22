@@ -45,7 +45,7 @@ You can run the training server either:
 
 - Monitors one mains power sensor in Home Assistant.
 - Runs live NILM inference.
-- Publishes estimated appliance entities (`power` and `on/off`).
+- Publishes estimated appliance entities (`power`, cumulative `energy consumed`, and `on/off`) for dashboards, automations, and the Energy dashboard.
 - Provides UI for setup, preview, and training job preparation.
 
 ### NILM Training Server
