@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.5.5
+
+- Publish native NILM energy states to six decimal `kWh` places while retaining full accumulator precision.
+
 ## 1.1.5.4
 
 - Align native NILM energy entities with Home Assistant's integral helper (`state_class: total`) so Home Assistant displays their translated values with its normal energy precision.

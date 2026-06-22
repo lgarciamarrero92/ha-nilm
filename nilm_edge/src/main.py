@@ -148,7 +148,7 @@ async def publish_disaggregation_dl(
         publish_tasks.append(post_state(power_entity_id, power_data))
 
         energy_data = {
-            "state": round(energy_update.total_kwh, 9),
+            "state": round(energy_update.total_kwh, 6),
             "attributes": {
                 "unit_of_measurement": "kWh",
                 "device_class": "energy",
