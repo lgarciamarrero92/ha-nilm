@@ -1,8 +1,12 @@
 # Changelog
 
+## 1.1.5.4
+
+- Align native NILM energy entities with Home Assistant's integral helper (`state_class: total`) so Home Assistant displays their translated values with its normal energy precision.
+
 ## 1.1.5.3
 
-- Display native NILM energy values with two decimal places in Home Assistant cards while retaining full stored precision.
+- Suggest two decimal places for native NILM energy values in Home Assistant cards.
 
 ## 1.1.5.2
 
