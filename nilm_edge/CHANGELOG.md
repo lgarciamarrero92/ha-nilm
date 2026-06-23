@@ -1,24 +1,10 @@
 # Changelog
 
-## 1.1.5.5
+## 1.1.6
 
-- Publish native NILM energy states to six decimal `kWh` places while retaining full accumulator precision.
-
-## 1.1.5.4
-
-- Align native NILM energy entities with Home Assistant's integral helper (`state_class: total`) so Home Assistant displays their translated values with its normal energy precision.
-
-## 1.1.5.3
-
-- Suggest two decimal places for native NILM energy values in Home Assistant cards.
-
-## 1.1.5.2
-
-- Show each live model's native energy-consumed entity in its dashboard card.
-
-## 1.1.5.1
-
-- Publish persistent per-appliance cumulative energy sensors for use in the Home Assistant Energy dashboard.
+- Publish persistent per-appliance cumulative energy-consumed sensors in `kWh`, ready for the Home Assistant Energy dashboard.
+- Preserve cumulative energy across add-on restarts and avoid integrating long stale-data gaps.
+- Show each live model's native energy entity in its dashboard card.
 
 ## 1.1.5
 
