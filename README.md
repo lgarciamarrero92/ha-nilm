@@ -26,10 +26,10 @@ You can run the training server either:
 
 ## Why HA-NILM
 
-- Estimate appliance usage from one mains sensor instead of installing a dedicated meter on every device.
-- Train appliance models directly from Home Assistant recorder history.
-- Analyze estimated appliance share, consumption, and activity over time.
-- Publish estimated appliance entities for dashboards, automations, and energy workflows.
+- Estimate appliance activity and energy usage from one mains sensor instead of metering every device.
+- Learn appliance patterns from your Home Assistant history.
+- Review estimated appliance activity, consumption, and energy share over time.
+- Publish live estimated entities for dashboards, automations, and energy workflows.
 
 ## Before You Begin
 
