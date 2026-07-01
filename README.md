@@ -4,9 +4,7 @@
 
 <h1 align="center">Non-Intrusive Load Monitoring (NILM) For Home Assistant</h1>
 
-<h3 align="center">🔌 Turn your whole-home power sensor into appliance activity and energy insight</h3>
-
-<p align="center">────────────────────────</p>
+<h2 align="center">🔌 Turn your whole-home power sensor into appliance activity and energy insight</h2>
 
 HA-NILM learns your appliance patterns during a short guided training phase, then uses them to estimate real-time appliance activity and energy usage from your whole-home power meter, locally in Home Assistant.
 
