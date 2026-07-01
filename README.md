@@ -1,12 +1,16 @@
-# NILM For Home Assistant
-
 <p align="center">
   <img src="nilm_edge/logo.png" alt="NILM for Home Assistant logo" width="240">
 </p>
 
-Estimate appliance usage from a single mains power sensor.
+<h1 align="center">Non-Intrusive Load Monitoring (NILM) For Home Assistant</h1>
 
-Use NILM to train appliance models from Home Assistant history, preview historical disaggregation, and publish live estimated entities for dashboards and automations without installing a dedicated meter on every device.
+<p align="center" style="font-size: 1.35em;">
+  <strong>🔌 Turn your whole-home power sensor into appliance activity and energy insight</strong>
+</p>
+
+---
+
+HA-NILM learns your appliance patterns during a short guided training phase, then uses them to estimate real-time appliance activity and energy usage from your whole-home power meter, locally in Home Assistant.
 
 <p align="center">
   <img src="nilm_edge/www/ha-nilm.png" alt="NILM for Home Assistant interface preview" width="640">
@@ -24,7 +28,7 @@ You can run the training server either:
 - as the `NILM Training Server` app inside Home Assistant
 - or as the `ha-nilm-trainer` Docker container reachable from `NILM`
 
-## Why NILM
+## Why HA-NILM
 
 - Estimate appliance usage from one mains sensor instead of installing a dedicated meter on every device.
 - Train appliance models directly from Home Assistant recorder history.
