@@ -4,7 +4,7 @@
 
 <h1 align="center">Non-Intrusive Load Monitoring (NILM) For Home Assistant</h1>
 
-<h2 align="center">🔌 Turn your whole-home power sensor into appliance activity and energy insight</h2>
+<h3 align="center">🔌 Turn your whole-home power sensor into appliance activity and energy insight</h3>
 
 <p align="center">────────────────────────</p>
 
