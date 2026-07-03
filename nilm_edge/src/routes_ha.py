@@ -62,6 +62,47 @@ async def get_sensors_handler(request):
             return web.json_response({"status": "error", "message": f"Internal server error: {exc}"}, status=500)
 
 
+async def get_binary_sensors_handler(request):
+    headers = {
+        "Authorization": f"Bearer {app_state.TOKEN}",
+        "Content-Type": "application/json",
+    }
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(f"{app_state.HA_REST_API_URL}/states", headers=headers) as response:
+                response.raise_for_status()
+                all_states = await response.json()
+
+            binary_sensors = []
+            for state in all_states:
+                entity_id = state.get("entity_id")
+                attributes = state.get("attributes", {})
+                if not entity_id or not entity_id.startswith("binary_sensor."):
+                    continue
+
+                source = attributes.get("source")
+                is_virtual = source == "dl" or entity_id.startswith("binary_sensor.nilm_")
+                binary_sensors.append({
+                    "entity_id": entity_id,
+                    "friendly_name": attributes.get("friendly_name", entity_id),
+                    "state": state.get("state"),
+                    "last_changed": state.get("last_changed"),
+                    "device_class": attributes.get("device_class"),
+                    "source": source,
+                    "is_virtual": is_virtual,
+                })
+
+            binary_sensors.sort(key=lambda item: item["friendly_name"].lower())
+            return web.json_response(binary_sensors)
+        except aiohttp.ClientError as exc:
+            print(f"Error fetching binary sensors from HA: {exc}")
+            return web.json_response({"status": "error", "message": f"Could not fetch binary sensors from Home Assistant: {exc}"}, status=500)
+        except Exception as exc:
+            print(f"Unexpected error in get_binary_sensors_handler: {exc}")
+            return web.json_response({"status": "error", "message": f"Internal server error: {exc}"}, status=500)
+
+
 async def get_history_handler(request):
     start_time_str_path = request.match_info.get("start_time_str")
     end_time_query = request.query.get("end_time")
@@ -133,3 +174,4 @@ async def get_history_handler(request):
 def register_ha_routes(app, ingress_url_base):
     app.router.add_get("/history/period/{start_time_str}", get_history_handler)
     app.router.add_get(ingress_url_base + "sensors", get_sensors_handler)
+    app.router.add_get(ingress_url_base + "binary-sensors", get_binary_sensors_handler)

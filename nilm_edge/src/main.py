@@ -10,6 +10,7 @@ from aiohttp import web
 import websockets
 
 import app_state
+from entity_slug import slugify_entity_suffix
 from embedding_store import save_embedding_npy
 from energy_accumulator import EnergyAccumulator
 from power_units import normalize_power_to_watts
@@ -35,7 +36,7 @@ signal.signal(signal.SIGTERM, shutdown_handler)
 
 
 def _slug(value: str) -> str:
-    return value.replace(" ", "_").replace("-", "_").lower()
+    return slugify_entity_suffix(value)
 
 
 async def publish_disaggregation_dl(

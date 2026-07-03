@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.7
+
+- Added an optional ON/OFF helper for interval supervision, allowing users to select a binary sensor and automatically prefill editable ON intervals from its history.
+- Added a binary-sensor discovery endpoint and filtered out HA-NILM virtual binary sensors from helper choices.
+- Improved interval supervision controls with a clear-all action in the Selected Windows Preview section and clearer success/status modals after helper intervals are created.
+- Fixed published Home Assistant entity IDs for appliance names with non-English letters by transliterating names into ASCII-safe slugs while preserving the original friendly name.
+
 ## 1.1.6
 
 - Publish persistent per-appliance cumulative energy-consumed sensors in `kWh`, ready for the Home Assistant Energy dashboard.

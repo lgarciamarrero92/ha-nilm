@@ -406,6 +406,8 @@ export function createJobsUI({
   deleteModalMessageEl,
   confirmDeleteBtnEl,
   cancelDeleteBtnEl,
+  showModal = null,
+  hideModal = null,
   pollEveryMs = 5000,
   endpointBase = "training",
   pollConcurrency = 4,
@@ -423,7 +425,13 @@ export function createJobsUI({
 
   function closeDeleteModal() {
     pendingDeleteJobId = null;
-    if (deleteModalEl) deleteModalEl.style.display = "none";
+    if (deleteModalEl) {
+      if (typeof hideModal === "function") {
+        hideModal(deleteModalEl);
+      } else {
+        deleteModalEl.style.display = "none";
+      }
+    }
   }
 
   function openDeleteModal(jobId) {
@@ -434,13 +442,17 @@ export function createJobsUI({
       deleteModalMessageEl.textContent = `Remove "${appliance}" from the local jobs list?`;
     }
     if (deleteModalEl) {
-      deleteModalEl.style.display = "flex";
-      requestAnimationFrame(() => {
-        const modalCard = deleteModalEl.querySelector(".modal-content");
-        if (modalCard && typeof modalCard.scrollIntoView === "function") {
-          modalCard.scrollIntoView({ block: "center", inline: "center" });
-        }
-      });
+      if (typeof showModal === "function") {
+        showModal(deleteModalEl);
+      } else {
+        deleteModalEl.style.display = "flex";
+        requestAnimationFrame(() => {
+          const modalCard = deleteModalEl.querySelector(".modal-content");
+          if (modalCard && typeof modalCard.scrollIntoView === "function") {
+            modalCard.scrollIntoView({ block: "center", inline: "center" });
+          }
+        });
+      }
     }
   }
 

@@ -125,6 +125,12 @@
         color: #0f172a;
     }
 
+    .action-danger {
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        color: #fff;
+        box-shadow: 0 10px 20px rgba(220, 38, 38, 0.18);
+    }
+
     .action-chart-view {
         background: linear-gradient(135deg, #eff6ff, #dbeafe);
         color: #1d4ed8;
@@ -255,6 +261,14 @@
         max-width: calc(100% - 24px);
     }
 
+    .chart-overlay-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        pointer-events: auto;
+    }
+
     .chart-overlay-controls .group {
         pointer-events: auto;
     }
@@ -320,6 +334,7 @@
         }
 
         .chart-overlay-btn {
+            justify-content: center;
             min-height: 36px;
             padding: 0 12px;
             gap: 0;
@@ -334,11 +349,15 @@
     .modal-overlay {
         position: fixed;
         inset: 0;
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        min-height: 100vh;
         background-color: rgba(0, 0, 0, 0.5);
         display: flex;
         justify-content: center;
         align-items: center;
-        z-index: 1000;
+        z-index: 2147483000;
         padding: 16px;
         overflow: auto;
     }
@@ -352,7 +371,10 @@
         padding: 24px;
         box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
         text-align: center;
+        width: min(400px, calc(100vw - 32px));
         max-width: 400px;
+        max-height: calc(100dvh - 32px);
+        overflow: auto;
         border-radius: 18px;
         border: 1px solid #e2e8f0;
     }
@@ -1153,6 +1175,14 @@
                 <p class="text-xs text-slate-500 mt-2">Choose the Home Assistant sensor that directly measures the appliance power over the same mains range.</p>
             </div>
 
+            <div id="binaryIntervalHelperSection" class="mb-4">
+                <label for="binaryIntervalSensorSelect" class="field-label">Optional ON/OFF Helper</label>
+                <select id="binaryIntervalSensorSelect" class="field-input">
+                    <option value="">Select binary sensor to prefill ON intervals</option>
+                </select>
+                <p id="binaryIntervalHelperStatus" class="text-xs text-slate-500 mt-2">Choose a binary sensor to draw matching ON intervals automatically. You can still edit, remove, or add intervals after they are created.</p>
+            </div>
+
             <div id="selectionAssistantSection" class="selection-assistant mb-4">
                     <div class="selection-assistant-grid">
                         <div>
@@ -1169,16 +1199,18 @@
                             <i class="fas fa-plus-circle mr-2" aria-hidden="true"></i>Add This Interval
                         </button>
                     </div>
-                </div>
+            </div>
 
             <div id="chartContainer" class="relative h-96 chart-container">
                 <div class="chart-overlay-controls">
-                    <div class="relative group">
-                        <button id="selectModeBtn" class="action-btn action-primary chart-overlay-btn inline-flex items-center justify-center">
-                            <i class="fas fa-paint-brush text-lg" aria-hidden="true"></i>
-                            <span id="selectModeBtnLabel" class="chart-overlay-btn-label">Draw Interval</span>
-                        </button>
-                        <span id="selectModeTooltip" class="tooltip chart-overlay-tooltip absolute top-full left-0 mt-2 px-3 py-1 bg-gray-800 text-white text-xs rounded-md whitespace-nowrap">Start guided interval drawing.</span>
+                    <div class="chart-overlay-actions">
+                        <div class="relative group">
+                            <button id="selectModeBtn" class="action-btn action-primary chart-overlay-btn inline-flex items-center justify-center">
+                                <i class="fas fa-paint-brush text-lg" aria-hidden="true"></i>
+                                <span id="selectModeBtnLabel" class="chart-overlay-btn-label">Draw Interval</span>
+                            </button>
+                            <span id="selectModeTooltip" class="tooltip chart-overlay-tooltip absolute top-full left-0 mt-2 px-3 py-1 bg-gray-800 text-white text-xs rounded-md whitespace-nowrap">Start guided interval drawing.</span>
+                        </div>
                     </div>
                     <div id="selectModeHint" class="chart-overlay-hint">Start guided interval drawing.</div>
                 </div>
@@ -1202,6 +1234,9 @@
                     <h2 class="text-xl font-semibold">Selected Windows Preview</h2>
                     <p class="panel-copy text-sm mt-1">Review each labeled interval before preparing the training package.</p>
                 </div>
+                <button id="clearAllSelectionsBtn" class="action-btn action-danger inline-flex items-center justify-center" type="button">
+                    <i class="fas fa-trash-alt mr-2" aria-hidden="true"></i>Clear All
+                </button>
             </div>
             <div id="selectionPreview" class="preview-grid">
                 <!-- Preview charts will be dynamically added here -->
@@ -1330,7 +1365,7 @@
             <li>Step 1: select the training server and confirm that the connection is ready.</li>
             <li>Step 2: enter the appliance name and choose the supervision mode.</li>
             <li>Step 3: choose the mains history interval that will be used for training.</li>
-            <li>Step 4: if you use interval supervision, draw the ON intervals and the edge will derive weak mains for training; if you use sensor supervision, select the ground-truth appliance sensor.</li>
+            <li>Step 4: if you use interval supervision, draw the ON intervals; if you use sensor supervision, select the ground-truth appliance sensor.</li>
             <li>Step 5: prepare the training package, send it to the training server, and follow the job in the Training Jobs table.</li>
         </ol>
         <div class="flex justify-end mt-6">
@@ -1346,6 +1381,7 @@
     let displaySensorHistoryData = []; // Display-only mains history with low-power cleanup
     let applianceSensorHistoryData = []; // Optional ground-truth appliance power trace
     let sensorDerivedWindows = []; // Read-only ON intervals derived from the appliance sensor
+    let binaryIntervalHelperHistoryData = []; // Optional binary sensor trace used to prefill editable ON intervals
     let firstTimestamp = 0; // Timestamp of the first data point of the *full available data*
     let lastTimestamp = 0; // Timestamp of the last data point of the *full available data*
     const TRAINING_CHART_MAINS_COLOR = "#64748b";
@@ -1431,6 +1467,7 @@
     let selectModeBtn;
     let selectModeBtnIcon;
     let selectModeBtnLabel;
+    let clearAllSelectionsBtn;
     let selectModeTooltipTimer = null;
 
     let applianceNameInput;
@@ -1438,6 +1475,9 @@
     let supervisionModeHint;
     let sensorSupervisionSection;
     let applianceSensorSelect;
+    let binaryIntervalHelperSection;
+    let binaryIntervalSensorSelect;
+    let binaryIntervalHelperStatus;
     let applianceNameError;
     let applianceInfoStatus;
 
@@ -1453,6 +1493,7 @@
     let trainingHelpBtn;
     let trainingHelpModal;
     let closeTrainingHelpModalBtn;
+    const modalPortalState = new WeakMap();
 
     // References to new elements that were causing ReferenceReferences if not found
     let selectionPreviewContainer; // Declared here, assigned in initializeTrainingUI
@@ -1484,6 +1525,7 @@
     let activeTrainingQuickRangeHours = null;
     let addManualIntervalHandler;
     let supervisionModeChangeHandler;
+    let binaryIntervalSensorChangeHandler;
     let manualIntervalInputHandler;
     let retryTrainingServerStatusHandler;
     let trainingServerUrlSelectHandler;
@@ -1500,6 +1542,7 @@
     let MAIN_SENSOR_ENTITY_ID = "";
     let MAIN_SENSOR_UNIT = "";
     let availablePowerSensorsById = new Map();
+    let availableBinarySensorsById = new Map();
     let trainingJobId = null;
 
     // Define initializeTrainingUI in the global scope so web_ui.html can call it
@@ -1608,7 +1651,9 @@
                 || (Array.isArray(selectedWindows) && selectedWindows.length > 0)
                 || (Array.isArray(sensorDerivedWindows) && sensorDerivedWindows.length > 0)
                 || (Array.isArray(applianceSensorHistoryData) && applianceSensorHistoryData.length > 0)
-                || Boolean(applianceSensorSelect?.value);
+                || (Array.isArray(binaryIntervalHelperHistoryData) && binaryIntervalHelperHistoryData.length > 0)
+                || Boolean(applianceSensorSelect?.value)
+                || Boolean(binaryIntervalSensorSelect?.value);
         }
 
         function resetTrainingDraftState({ preserveSensorSelection = false, preserveIntervalConfirmation = false } = {}) {
@@ -1633,9 +1678,13 @@
             selectedWindows = [];
             sensorDerivedWindows = [];
             applianceSensorHistoryData = [];
+            binaryIntervalHelperHistoryData = [];
 
             if (!preserveSensorSelection && applianceSensorSelect) {
                 applianceSensorSelect.value = "";
+            }
+            if (!preserveSensorSelection && binaryIntervalSensorSelect) {
+                binaryIntervalSensorSelect.value = "";
             }
 
             if (powerChart) {
@@ -2166,9 +2215,14 @@
             const selectModeControl = selectModeBtn?.closest('.relative.group');
             if (selectModeControl) selectModeControl.classList.toggle('hidden', !isLabelsStep || isSensorMode);
             if (selectModeBtn) selectModeBtn.disabled = !isLabelsStep || isSensorMode;
+            if (clearAllSelectionsBtn) {
+                clearAllSelectionsBtn.classList.toggle('hidden', !isLabelsStep || isSensorMode);
+                clearAllSelectionsBtn.disabled = !isLabelsStep || isSensorMode;
+            }
             if (trainingIntervalToolbarPanel) trainingIntervalToolbarPanel.classList.toggle('hidden', !isIntervalStep);
             if (selectionAssistantSection) selectionAssistantSection.classList.toggle('hidden', !isLabelsStep || isSensorMode);
             if (sensorSupervisionSection) sensorSupervisionSection.classList.toggle('hidden', !isLabelsStep || !isSensorMode);
+            if (binaryIntervalHelperSection) binaryIntervalHelperSection.classList.toggle('hidden', !isLabelsStep || isSensorMode);
             if (previewSection) previewSection.classList.toggle('hidden', !isLabelsStep || isSensorMode);
 
             if (trainingWizardStatus) {
@@ -2348,7 +2402,7 @@
             if (supervisionModeHint) {
                 supervisionModeHint.textContent = isSensor
                     ? "Use sensor supervision when you have a Home Assistant power sensor for this appliance."
-                    : "Use interval supervision when you only know when the appliance was ON inside the mains signal. The edge will derive weak mains and the trainer will use weak supervision.";
+                    : "Use interval supervision when you only know when the appliance was ON inside the mains signal.";
             }
 
             if (isSensor && selectionModeActive) {
@@ -2362,6 +2416,19 @@
             if (!isSensor) {
                 applianceSensorHistoryData = [];
                 sensorDerivedWindows = [];
+            }
+            if (sensorSupervisionSection) {
+                sensorSupervisionSection.classList.toggle('hidden', !isSensor);
+            }
+            if (selectionAssistantSection) {
+                selectionAssistantSection.classList.toggle('hidden', isSensor);
+            }
+            if (binaryIntervalHelperSection) {
+                binaryIntervalHelperSection.classList.toggle('hidden', isSensor);
+            }
+            if (isSensor) {
+                binaryIntervalHelperHistoryData = [];
+                if (binaryIntervalSensorSelect) binaryIntervalSensorSelect.value = "";
             }
             if (powerChart) {
                 initializePowerChart(fullSensorHistoryData, firstTimestamp, lastTimestamp);
@@ -2447,6 +2514,14 @@
             return await response.json();
         }
 
+        async function fetchAvailableBinarySensors() {
+            const response = await fetch('binary-sensors');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return await response.json();
+        }
+
         function normalizeTrainingPowerValue(rawValue, sensorMeta = null, fallbackUnit = "") {
             const numericValue = Number(rawValue);
             if (!Number.isFinite(numericValue)) return NaN;
@@ -2478,6 +2553,185 @@
 
             if (previous && Array.from(applianceSensorSelect.options).some(opt => opt.value === previous)) {
                 applianceSensorSelect.value = previous;
+            }
+        }
+
+        function populateBinaryIntervalSensorSelect(sensors) {
+            if (!binaryIntervalSensorSelect) return;
+            const previous = binaryIntervalSensorSelect.value;
+            binaryIntervalSensorSelect.innerHTML = '<option value="">Select binary sensor to prefill ON intervals</option>';
+
+            (Array.isArray(sensors) ? sensors : [])
+                .filter(sensor =>
+                    sensor?.entity_id &&
+                    !sensor.is_virtual &&
+                    sensor.source !== 'dl' &&
+                    !sensor.entity_id.startsWith('binary_sensor.nilm_')
+                )
+                .forEach(sensor => {
+                    const option = document.createElement('option');
+                    option.value = sensor.entity_id;
+                    option.textContent = sensor.friendly_name || sensor.entity_id;
+                    binaryIntervalSensorSelect.appendChild(option);
+                });
+
+            if (previous && Array.from(binaryIntervalSensorSelect.options).some(opt => opt.value === previous)) {
+                binaryIntervalSensorSelect.value = previous;
+            }
+        }
+
+        function setBinaryIntervalHelperStatus(message, isError = false) {
+            if (!binaryIntervalHelperStatus) return;
+            binaryIntervalHelperStatus.textContent = message;
+            binaryIntervalHelperStatus.classList.toggle('text-red-500', Boolean(isError));
+            binaryIntervalHelperStatus.classList.toggle('text-slate-500', !isError);
+        }
+
+        function deriveIntervalsFromBinaryHistory(binaryHistory) {
+            const points = (Array.isArray(binaryHistory) ? binaryHistory : [])
+                .map((point) => ({
+                    x: Number(point?.x),
+                    y: Number(point?.y),
+                }))
+                .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y))
+                .sort((a, b) => a.x - b.x);
+            if (!points.length) return [];
+
+            const intervals = [];
+            let runStart = null;
+            const nominalStep = estimateNominalStepMs(points);
+            const rangeStart = Number.isFinite(firstTimestamp) ? firstTimestamp : points[0].x;
+            const rangeEnd = Number.isFinite(lastTimestamp) ? lastTimestamp : points[points.length - 1].x;
+
+            for (const point of points) {
+                const isOn = point.y >= 0.5;
+                if (isOn && runStart === null) {
+                    runStart = point.x;
+                } else if (!isOn && runStart !== null) {
+                    const end = Math.max(runStart, point.x);
+                    if (end > runStart) {
+                        intervals.push({ start: Math.max(rangeStart, runStart), end: Math.min(rangeEnd, end) });
+                    }
+                    runStart = null;
+                }
+            }
+
+            if (runStart !== null) {
+                const lastPoint = points[points.length - 1];
+                const end = Math.min(rangeEnd, lastPoint.x + nominalStep);
+                if (end > runStart) {
+                    intervals.push({ start: Math.max(rangeStart, runStart), end });
+                }
+            }
+
+            return intervals.filter((interval) =>
+                Number.isFinite(interval.start)
+                && Number.isFinite(interval.end)
+                && interval.end > interval.start
+                && interval.start >= rangeStart
+                && interval.end <= rangeEnd
+            );
+        }
+
+        function addBinaryHelperIntervals(intervals, helperEntityId) {
+            if (!powerChart || !powerChart.options?.plugins?.annotation?.annotations) return { added: 0, skipped: 0 };
+            let added = 0;
+            let skipped = 0;
+            const annotations = powerChart.options.plugins.annotation.annotations;
+            const applianceName = applianceNameInput ? applianceNameInput.value.trim() : '';
+
+            for (const interval of intervals) {
+                const start = snapToNearestTimestamp(interval.start);
+                const end = snapToNearestTimestamp(interval.end);
+                const orderedStart = Math.min(start, end);
+                const orderedEnd = Math.max(start, end);
+                if (
+                    !Number.isFinite(orderedStart)
+                    || !Number.isFinite(orderedEnd)
+                    || orderedEnd <= orderedStart
+                    || orderedStart < firstTimestamp
+                    || orderedEnd > lastTimestamp
+                    || hasOverlap(orderedStart, orderedEnd, annotations)
+                ) {
+                    skipped += 1;
+                    continue;
+                }
+
+                const annotationId = `binary_helper_${Date.now()}_${added}`;
+                annotations[annotationId] = {
+                    id: annotationId,
+                    type: 'box',
+                    xMin: orderedStart,
+                    xMax: orderedEnd,
+                    backgroundColor: TRAINING_INTERVAL_FILL_COLOR,
+                    borderColor: TRAINING_INTERVAL_BORDER_COLOR,
+                    borderWidth: 1,
+                    isPending: false,
+                    applianceName,
+                    helperEntityId,
+                };
+                selectedWindows.push({
+                    id: annotationId,
+                    start: orderedStart,
+                    end: orderedEnd,
+                    applianceName,
+                    helperEntityId,
+                });
+                added += 1;
+            }
+
+            if (added > 0) {
+                const lastAdded = selectedWindows[selectedWindows.length - 1];
+                setManualIntervalInputs(lastAdded.start, lastAdded.end);
+                renderSelectionPreviews();
+                powerChart.update('none');
+                updateTrainingStepper();
+            }
+
+            return { added, skipped };
+        }
+
+        async function refreshBinaryIntervalHelper() {
+            if (currentSupervisionMode() !== 'intervals' || !binaryIntervalSensorSelect || !binaryIntervalSensorSelect.value) {
+                binaryIntervalHelperHistoryData = [];
+                setBinaryIntervalHelperStatus("Choose a binary sensor to draw matching ON intervals automatically. You can still edit, remove, or add intervals after they are created.");
+                return;
+            }
+            if (!Number.isFinite(firstTimestamp) || !Number.isFinite(lastTimestamp) || firstTimestamp <= 0 || lastTimestamp <= 0) {
+                binaryIntervalHelperHistoryData = [];
+                setBinaryIntervalHelperStatus("Load a mains range before using the binary helper.", true);
+                return;
+            }
+
+            showLoadingIndicator();
+            try {
+                const helperEntityId = binaryIntervalSensorSelect.value;
+                const helperLabel = binaryIntervalSensorSelect.selectedOptions?.[0]?.textContent || helperEntityId;
+                const rawBinarySeries = await fetchHistorySeries(helperEntityId, firstTimestamp, lastTimestamp);
+                binaryIntervalHelperHistoryData = rawBinarySeries;
+                const intervals = deriveIntervalsFromBinaryHistory(rawBinarySeries);
+                const { added, skipped } = addBinaryHelperIntervals(intervals, helperEntityId);
+                const skippedCopy = skipped > 0 ? ` ${skipped} overlapping interval${skipped === 1 ? "" : "s"} skipped.` : "";
+                setBinaryIntervalHelperStatus(
+                    added > 0
+                        ? `Added ${added} editable ON interval${added === 1 ? "" : "s"} from ${helperLabel}.${skippedCopy}`
+                        : `No new ON intervals were added from ${helperLabel}.${skippedCopy || " Check that the selected range contains ON periods."}`,
+                    false
+                );
+                if (added > 0) {
+                    const skippedLine = skipped > 0 ? ` ${skipped} overlapping interval${skipped === 1 ? " was" : "s were"} skipped.` : "";
+                    showValidationResultModal(
+                        "ON Intervals Drawn",
+                        `Created ${added} editable ON interval${added === 1 ? "" : "s"} from ${helperLabel}.${skippedLine} You can review, edit, remove, or add intervals before preparing the training package.`,
+                        false
+                    );
+                }
+            } catch (error) {
+                console.error('Error creating binary helper intervals:', error);
+                setBinaryIntervalHelperStatus(`Failed to create intervals from binary sensor: ${error.message}`, true);
+                showValidationResultModal("Binary Helper Failed", `Failed to create intervals from the binary sensor: ${error.message}`, true);
+            } finally {
+                hideLoadingIndicator();
             }
         }
 
@@ -3024,31 +3278,65 @@
         function showOverlapModal() {
             console.log("DEBUG: Calling showOverlapModal().");
             if (overlapModal) {
-                overlapModal.style.display = 'flex';
+                showModalInCurrentView(overlapModal);
             } else {
                  console.warn("DEBUG: overlapModal not found when trying to show.");
             }
         }
 
         function hideOverlapModal() {
-            if (overlapModal) {
-                overlapModal.style.display = 'none';
+            hideModal(overlapModal);
+        }
+
+        function showModalInCurrentView(modal) {
+            if (!modal) return;
+            if (!modalPortalState.has(modal)) {
+                modalPortalState.set(modal, {
+                    parent: modal.parentNode,
+                    nextSibling: modal.nextSibling,
+                });
             }
+            if (modal.parentNode !== document.body) {
+                document.body.appendChild(modal);
+            }
+            modal.style.position = 'fixed';
+            modal.style.inset = '0';
+            modal.style.width = '100vw';
+            modal.style.height = '100vh';
+            modal.style.minHeight = '100dvh';
+            modal.style.display = 'flex';
+        }
+
+        function hideModal(modal) {
+            if (!modal) return;
+            modal.style.display = 'none';
+            modal.style.position = '';
+            modal.style.inset = '';
+            modal.style.width = '';
+            modal.style.height = '';
+            modal.style.minHeight = '';
+            const original = modalPortalState.get(modal);
+            if (original?.parent && modal.parentNode === document.body) {
+                if (original.nextSibling && original.nextSibling.parentNode === original.parent) {
+                    original.parent.insertBefore(modal, original.nextSibling);
+                } else {
+                    original.parent.appendChild(modal);
+                }
+            }
+            modalPortalState.delete(modal);
         }
 
         function showClearConfirmModal() {
             console.log("DEBUG: Calling showClearConfirmModal().");
             if (clearConfirmModal) {
-                clearConfirmModal.style.display = 'flex';
+                showModalInCurrentView(clearConfirmModal);
             } else {
                 console.warn("DEBUG: clearConfirmModal not found when trying to show.");
             }
         }
 
         function hideClearConfirmModal() {
-            if (clearConfirmModal) {
-                clearConfirmModal.style.display = 'none';
-            }
+            hideModal(clearConfirmModal);
         }
 
         function showValidationResultModal(title, message, isError = false) {
@@ -3060,7 +3348,7 @@
                 validationResultTitle.classList.toggle('text-red-600', isError);
             }
             if (validationResultModal) {
-                validationResultModal.style.display = 'flex';
+                showModalInCurrentView(validationResultModal);
             } else {
                  console.warn("DEBUG: validationResultModal not found when trying to show.");
             }
@@ -3404,6 +3692,11 @@
                 powerChart.update();
             }
             selectedWindows = [];
+            binaryIntervalHelperHistoryData = [];
+            if (binaryIntervalSensorSelect) {
+                binaryIntervalSensorSelect.value = "";
+            }
+            setBinaryIntervalHelperStatus("Choose a binary sensor to draw matching ON intervals automatically. You can still edit, remove, or add intervals after they are created.");
             renderSelectionPreviews();
             finishIntervalSelectionMode();
             if (customChartInfo) customChartInfo.classList.add('hidden'); 
@@ -4174,6 +4467,12 @@
                             } catch (overlayError) {
                                 console.error('DEBUG: Failed to refresh appliance overlay:', overlayError);
                             }
+                        } else if (currentSupervisionMode() === 'intervals' && binaryIntervalSensorSelect?.value) {
+                            try {
+                                await refreshBinaryIntervalHelper();
+                            } catch (helperError) {
+                                console.error('DEBUG: Failed to refresh binary interval helper:', helperError);
+                            }
                         }
                         
                         // Removed: currentDateRangeDisplay update logic
@@ -4189,6 +4488,7 @@
                         displaySensorHistoryData = [];
                         applianceSensorHistoryData = [];
                         sensorDerivedWindows = [];
+                        binaryIntervalHelperHistoryData = [];
                         initializePowerChart([], 0, 0); 
                         if (trainingRangeStartInput) trainingRangeStartInput.value = '';
                         if (trainingRangeEndInput) trainingRangeEndInput.value = '';
@@ -4243,7 +4543,7 @@
                 powerChartCanvas.addEventListener('pointerleave', handleMouseLeave);
             }
             if (selectModeBtn) selectModeBtn.addEventListener('click', toggleSelectionMode);
-            if (document.getElementById('clearAllSelectionsBtn')) document.getElementById('clearAllSelectionsBtn').addEventListener('click', showClearConfirmModal);
+            if (clearAllSelectionsBtn) clearAllSelectionsBtn.addEventListener('click', showClearConfirmModal);
             if (checkAllDataBtn) checkAllDataBtn.addEventListener('click', handleCheckAllData);
             if (applianceNameInput) applianceNameInput.addEventListener('input', handleApplianceNameInput);
             if (applianceSensorSelect) {
@@ -4257,6 +4557,24 @@
                         showValidationResultModal("Sensor Overlay Failed", `Failed to load appliance power history: ${error.message}`, true);
                     }
                 });
+            }
+            binaryIntervalSensorChangeHandler = async () => {
+                preparedTrainingPackage = null;
+                trainingJobId = null;
+                pendingJobEvents = [];
+                if (trainingPrepStatus) {
+                    trainingPrepStatus.textContent = "";
+                    trainingPrepStatus.classList.add("hidden");
+                }
+                await refreshBinaryIntervalHelper();
+                if (binaryIntervalSensorSelect) {
+                    binaryIntervalSensorSelect.value = "";
+                }
+                binaryIntervalHelperHistoryData = [];
+                updateTrainingStepper();
+            };
+            if (binaryIntervalSensorSelect) {
+                binaryIntervalSensorSelect.addEventListener('change', binaryIntervalSensorChangeHandler);
             }
             addManualIntervalHandler = () => {
                 const rawStart = parseDateTimeLocal(manualStartInput?.value);
@@ -4301,16 +4619,16 @@
             };
             closeValidationResultHandler = () => {
                 console.log("DEBUG: closeValidationResultModalBtn clicked. Hiding all relevant modals.");
-                if (validationResultModal) { validationResultModal.style.display = 'none'; }
-                if (clearConfirmModal) { clearConfirmModal.style.display = 'none'; }
-                if (overlapModal) { overlapModal.style.display = 'none'; }
+                hideModal(validationResultModal);
+                hideModal(clearConfirmModal);
+                hideModal(overlapModal);
                 if (dateRangeError) dateRangeError.classList.add('hidden'); 
             };
             trainingHelpOpenHandler = () => {
-                if (trainingHelpModal) trainingHelpModal.style.display = 'flex';
+                if (trainingHelpModal) showModalInCurrentView(trainingHelpModal);
             };
             trainingHelpCloseHandler = () => {
-                if (trainingHelpModal) trainingHelpModal.style.display = 'none';
+                hideModal(trainingHelpModal);
             };
             trainingHelpOverlayHandler = (event) => {
                 if (event.target === trainingHelpModal) {
@@ -4441,7 +4759,7 @@
                 powerChartCanvas.removeEventListener('pointerleave', handleMouseLeave);
             }
             if (selectModeBtn) selectModeBtn.removeEventListener('click', toggleSelectionMode);
-            if (document.getElementById('clearAllSelectionsBtn')) document.getElementById('clearAllSelectionsBtn').removeEventListener('click', showClearConfirmModal);
+            if (clearAllSelectionsBtn) clearAllSelectionsBtn.removeEventListener('click', showClearConfirmModal);
             if (checkAllDataBtn) checkAllDataBtn.removeEventListener('click', handleCheckAllData);
             if (applianceNameInput) applianceNameInput.removeEventListener('input', handleApplianceNameInput);
             if (supervisionModeSelect && supervisionModeChangeHandler) supervisionModeSelect.removeEventListener('change', supervisionModeChangeHandler);
@@ -4467,6 +4785,7 @@
             if (saveTrainingServerCustomUrlBtn && saveTrainingServerCustomUrlHandler) saveTrainingServerCustomUrlBtn.removeEventListener('click', saveTrainingServerCustomUrlHandler);
             if (clearTrainingServerCustomUrlBtn && clearTrainingServerCustomUrlHandler) clearTrainingServerCustomUrlBtn.removeEventListener('click', clearTrainingServerCustomUrlHandler);
             if (trainingServerCustomUrlInput && trainingServerCustomUrlKeydownHandler) trainingServerCustomUrlInput.removeEventListener('keydown', trainingServerCustomUrlKeydownHandler);
+            if (binaryIntervalSensorSelect && binaryIntervalSensorChangeHandler) binaryIntervalSensorSelect.removeEventListener('change', binaryIntervalSensorChangeHandler);
             if (trainingHelpBtn && trainingHelpOpenHandler) trainingHelpBtn.removeEventListener('click', trainingHelpOpenHandler);
             if (closeTrainingHelpModalBtn && trainingHelpCloseHandler) closeTrainingHelpModalBtn.removeEventListener('click', trainingHelpCloseHandler);
             if (trainingHelpModal && trainingHelpOverlayHandler) trainingHelpModal.removeEventListener('click', trainingHelpOverlayHandler);
@@ -4535,12 +4854,16 @@
         selectModeBtn = document.getElementById('selectModeBtn');
         selectModeBtnIcon = selectModeBtn ? selectModeBtn.querySelector('i') : null;
         selectModeBtnLabel = document.getElementById('selectModeBtnLabel');
+        clearAllSelectionsBtn = document.getElementById('clearAllSelectionsBtn');
 
         applianceNameInput = document.getElementById('applianceNameInput');
         supervisionModeSelect = document.getElementById('supervisionModeSelect');
         supervisionModeHint = document.getElementById('supervisionModeHint');
         sensorSupervisionSection = document.getElementById('sensorSupervisionSection');
         applianceSensorSelect = document.getElementById('applianceSensorSelect');
+        binaryIntervalHelperSection = document.getElementById('binaryIntervalHelperSection');
+        binaryIntervalSensorSelect = document.getElementById('binaryIntervalSensorSelect');
+        binaryIntervalHelperStatus = document.getElementById('binaryIntervalHelperStatus');
         applianceNameError = document.getElementById('applianceNameError');
         applianceInfoStatus = document.getElementById('applianceInfoStatus');
 
@@ -4605,10 +4928,10 @@
         addManualIntervalBtn = document.getElementById('addManualIntervalBtn');
         selectionAssistantSection = document.getElementById('selectionAssistantSection');
 
-        if (overlapModal) { overlapModal.style.display = 'none'; }
-        if (clearConfirmModal) { clearConfirmModal.style.display = 'none'; }
-        if (validationResultModal) { validationResultModal.style.display = 'none'; }
-        if (deleteJobConfirmModal) { deleteJobConfirmModal.style.display = 'none'; }
+        hideModal(overlapModal);
+        hideModal(clearConfirmModal);
+        hideModal(validationResultModal);
+        hideModal(deleteJobConfirmModal);
         if (dateRangeError) dateRangeError.classList.add('hidden'); 
         // Removed: if (currentDateRangeDisplay) currentDateRangeDisplay.classList.add('hidden'); 
 
@@ -4733,7 +5056,7 @@
                 return config;
             } catch (error) {
                 console.error('Error fetching configuration:', error);
-                showValidationResultModal(`Failed to load configuration: ${error.message}`,true);
+                showValidationResultModal("Configuration Error", `Failed to load configuration: ${error.message}`, true);
             }
         }
 
@@ -4752,6 +5075,14 @@
             } catch (error) {
                 console.error('Error fetching appliance sensors:', error);
             }
+            try {
+                const binarySensors = await fetchAvailableBinarySensors();
+                availableBinarySensorsById = new Map((Array.isArray(binarySensors) ? binarySensors : []).map((sensor) => [sensor.entity_id, sensor]));
+                populateBinaryIntervalSensorSelect(binarySensors);
+            } catch (error) {
+                console.error('Error fetching binary sensors:', error);
+                setBinaryIntervalHelperStatus(`Failed to load binary sensors: ${error.message}`, true);
+            }
             // Start Flatpickr initialization
             initFlatpickrWithRetry();
         });
@@ -4761,7 +5092,7 @@
             try {
                 // If the UI is served from .../components/..., go one level up so we reach .../js/...
                 const jobsUrl = new URL("js/training/jobs_ui.js", window.location.href);
-                jobsUrl.searchParams.set("v", "20260324a");
+                jobsUrl.searchParams.set("v", "20260703a");
 
                 const mod = await import(jobsUrl.toString());
 
@@ -4777,6 +5108,8 @@
                     deleteModalMessageEl: deleteJobConfirmMessage,
                     confirmDeleteBtnEl: confirmDeleteJobBtn,
                     cancelDeleteBtnEl: cancelDeleteJobBtn,
+                    showModal: showModalInCurrentView,
+                    hideModal,
                     pollEveryMs: 5000
                 });
 
