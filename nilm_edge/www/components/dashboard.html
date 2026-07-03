@@ -1964,14 +1964,31 @@
     }
 
     function slugifyApplianceName(value) {
-        return String(value || "")
+        const transliteration = {
+            "\u00c6": "Ae", "\u00e6": "ae",
+            "\u00d0": "D", "\u00f0": "d",
+            "\u0110": "D", "\u0111": "d",
+            "\u0141": "L", "\u0142": "l",
+            "\u00d8": "O", "\u00f8": "o",
+            "\u00de": "Th", "\u00fe": "th",
+            "\u0152": "Oe", "\u0153": "oe",
+            "\u00df": "ss",
+        };
+        const transliterated = String(value || "")
             .trim()
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, "_")
+            .replace(/[\u00c6\u00e6\u00d0\u00f0\u0110\u0111\u0141\u0142\u00d8\u00f8\u00de\u00fe\u0152\u0153\u00df]/g, (char) => transliteration[char] || "");
+        const slug = transliterated
+            .normalize("NFKD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-zA-Z0-9_]+/g, "_")
             .replace(/^_+|_+$/g, "");
+        return slug.toLowerCase() || "appliance";
     }
 
     function realtimeEntityIdsForModel(embedding) {
+        if (embedding?.realtime_entity_ids?.power && embedding?.realtime_entity_ids?.energy && embedding?.realtime_entity_ids?.state) {
+            return embedding.realtime_entity_ids;
+        }
         const applianceSlug = slugifyApplianceName(embedding?.name || "");
         const bundleSlug = slugifyApplianceName(embedding?.bundle_id || "");
         const suffix = bundleSlug ? `${applianceSlug}_${bundleSlug}` : applianceSlug;

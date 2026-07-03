@@ -14,6 +14,7 @@ from aiohttp import web
 
 import app_state
 from embedding_store import bundle_models_dir, delete_embedding_files, list_saved_models, load_embedding_metadata, save_embedding_metadata
+from entity_slug import slugify_entity_suffix
 from ha_client import HistoryQuery, fetch_history_points
 from model_registry import get_bundle_by_id, make_model_key, parse_model_key
 from prepare_training_data import (
@@ -32,6 +33,16 @@ PREVIEW_JOB_TTL_S = 15 * 60
 
 def _batch_size():
     return app_state.get_batch_size()
+
+
+def _realtime_entity_ids(appliance_name: str, bundle_id: str) -> dict:
+    suffix_source = f"{appliance_name}_{bundle_id}" if bundle_id else appliance_name
+    suffix = slugify_entity_suffix(suffix_source)
+    return {
+        "power": f"sensor.nilm_{suffix}_power",
+        "energy": f"sensor.nilm_{suffix}_energy_consumed",
+        "state": f"binary_sensor.nilm_{suffix}_on",
+    }
 
 
 def _cleanup_preview_result_file(path):
@@ -1193,6 +1204,7 @@ async def get_embeddings_handler(request):
                 "updated_at": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
                 "source": "trained",
                 "metadata": metadata,
+                "realtime_entity_ids": _realtime_entity_ids(name, bundle_id),
                 "deletable": True,
             })
 
