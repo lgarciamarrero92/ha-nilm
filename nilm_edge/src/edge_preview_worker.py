@@ -18,6 +18,7 @@ from prepare_training_data import (
     zoh_resample_to_grid,
 )
 from refquery import RefQueryDisaggregator
+from runtime_settings import DEFAULT_SENSOR_MAX_GAP_S, clamp_sensor_max_gap_s
 
 
 PREVIEW_BATCH_SIZE = 1024
@@ -73,7 +74,14 @@ def summarize_state_series(state_series):
     }
 
 
-def build_offline_preview_context(points, inference_dir: str, num_threads: int = 2, align_grid: str = "start", max_hold_factor: float = 5.0):
+def build_offline_preview_context(
+    points,
+    inference_dir: str,
+    num_threads: int = 2,
+    align_grid: str = "start",
+    max_hold_factor: float = 5.0,
+    max_hold_s: float = DEFAULT_SENSOR_MAX_GAP_S,
+):
     parsed_points = parse_mains_points([{"x": float(ts) * 1000.0, "y": float(value)} for ts, value in (points or [])])
     if len(parsed_points) < 2:
         return {
@@ -110,7 +118,9 @@ def build_offline_preview_context(points, inference_dir: str, num_threads: int =
             "num_threads": int(num_threads),
         }
 
-    max_hold_s = float(max_hold_factor) * dt if max_hold_factor and max_hold_factor > 0 else None
+    max_hold_s = float(max_hold_s) if max_hold_s and max_hold_s > 0 else (
+        float(max_hold_factor) * dt if max_hold_factor and max_hold_factor > 0 else None
+    )
     fill_value_w = float(settings.query_mean)
     y_grid, mains_valid_mask = zoh_resample_to_grid(
         parsed_points,
@@ -579,7 +589,8 @@ def main():
             emit({"done": True, **result_payload})
         return 0
 
-    preview_context = build_offline_preview_context(points, inference_dir=model_entries[0]["inference_dir"], num_threads=2, align_grid="start", max_hold_factor=5.0)
+    sensor_max_gap_s = clamp_sensor_max_gap_s(payload.get("sensor_max_gap_s"))
+    preview_context = build_offline_preview_context(points, inference_dir=model_entries[0]["inference_dir"], num_threads=2, align_grid="start", max_hold_s=sensor_max_gap_s)
     preview_context["batch_size"] = int(payload.get("batch_size") or PREVIEW_BATCH_SIZE)
     if count_preview_points(preview_context) <= 0:
         result_payload = None

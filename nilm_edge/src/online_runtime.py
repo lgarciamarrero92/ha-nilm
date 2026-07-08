@@ -19,11 +19,13 @@ class MultiBundleOnlineRuntime:
         models_root: str,
         history_fetcher: Optional[HistoryFetcher],
         num_threads: int = 2,
+        max_gap_s: Optional[float] = None,
         top_k=None,
     ):
         self.models_root = models_root
         self.history_fetcher = history_fetcher
         self.num_threads = int(num_threads)
+        self.max_gap_s = max_gap_s
         self.top_k = top_k
         self.bundles = [bundle for bundle in bundles if bundle.mode == "online"]
         self.bundle_map = {bundle.bundle_id: bundle for bundle in self.bundles}
@@ -49,6 +51,7 @@ class MultiBundleOnlineRuntime:
                 embeddings_dir=embeddings_dir,
                 num_threads=self.num_threads,
                 history_fetcher=self.history_fetcher,
+                max_gap_s=self.max_gap_s,
                 top_k=self.top_k,
             )
 

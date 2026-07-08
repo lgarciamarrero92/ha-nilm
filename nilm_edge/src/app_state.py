@@ -10,6 +10,7 @@ from ha_client import HistoryQuery, fetch_history_points
 from model_registry import discover_model_bundles, get_latest_bundle_for_mode
 from online_runtime import MultiBundleOnlineRuntime
 from power_units import normalize_power_to_watts
+from runtime_settings import DEFAULT_SENSOR_MAX_GAP_S, clamp_sensor_max_gap_s
 from supervisor_addons import discover_training_server_addon
 from training_server_url import normalize_training_server_url, uses_homeassistant_gateway
 
@@ -91,19 +92,33 @@ def _clamp_batch_size(value) -> int:
         return DEFAULT_BATCH_SIZE
 
 
-def get_batch_size() -> int:
+def _load_options() -> Dict[str, Any]:
     if not os.path.exists(OPTIONS_FILE_PATH):
-        return DEFAULT_BATCH_SIZE
+        return {}
 
     try:
         with open(OPTIONS_FILE_PATH, "r", encoding="utf-8") as file_handle:
             loaded_options = json.load(file_handle)
         if not isinstance(loaded_options, dict):
-            return DEFAULT_BATCH_SIZE
-        return _clamp_batch_size(loaded_options.get("batch_size"))
+            return {}
+        return loaded_options
     except (OSError, json.JSONDecodeError) as exc:
-        print(f"Error reading add-on options from {OPTIONS_FILE_PATH}: {exc}. Using default batch size.")
-        return DEFAULT_BATCH_SIZE
+        print(f"Error reading add-on options from {OPTIONS_FILE_PATH}: {exc}. Using default options.")
+        return {}
+
+
+def get_batch_size() -> int:
+    return _clamp_batch_size(_load_options().get("batch_size"))
+
+
+def get_sensor_max_gap_s() -> float:
+    env_value = os.getenv("SENSOR_MAX_GAP_S")
+    if env_value:
+        return clamp_sensor_max_gap_s(env_value)
+    options = _load_options()
+    if "sensor_max_gap_s" not in options:
+        return DEFAULT_SENSOR_MAX_GAP_S
+    return clamp_sensor_max_gap_s(options.get("sensor_max_gap_s"))
 
 
 async def history_fetcher(start_dt, end_dt):
@@ -289,6 +304,7 @@ def reload_algorithm_config():
             models_root=MODELS_ROOT,
             num_threads=2,
             history_fetcher=history_fetcher,
+            max_gap_s=get_sensor_max_gap_s(),
             top_k=None,
         )
         print("Algorithm configuration reloaded successfully.")

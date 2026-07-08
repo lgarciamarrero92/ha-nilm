@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.8
+
+- Added a configurable `sensor_max_gap_s` add-on option for mains sensors with slower update cadences, defaulting to 60 seconds.
+- Applied the configured sensor gap consistently across live disaggregation, training preparation, sensor-derived training intervals, and offline prediction previews.
+
 ## 1.1.7
 
 - Added an optional ON/OFF helper for interval supervision, allowing users to select a binary sensor and automatically prefill editable ON intervals from its history.

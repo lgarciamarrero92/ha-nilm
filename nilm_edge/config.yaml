@@ -1,9 +1,9 @@
 name: "NILM"
-version: "1.1.7"
+version: "1.1.7.1"
 slug: "nilm"
 description: "Non-Intrusive Load Monitoring For Home Assistant"
 url: "https://ha-nilm.bigwicho.com/"
-image: "ghcr.io/lgarciamarrero92/ha-nilm-edge"
+# image: "ghcr.io/lgarciamarrero92/ha-nilm-edge"
 homeassistant_api: true
 hassio_api: true
 hassio_role: manager
@@ -17,9 +17,11 @@ ingress: true
 
 options:
   batch_size: 1024
+  sensor_max_gap_s: 60
 
 schema:
   batch_size: "int(32,8192)"
+  sensor_max_gap_s: "float(1,3600)"
 
 arch:
   - aarch64

@@ -23,6 +23,7 @@ from training_server_service import TrainingServerServiceManager
 
 running = True
 energy_accumulator = EnergyAccumulator("/data/nilm_energy.json")
+LIVE_WS_TIMEOUT_MARGIN_S = 5.0
 
 
 def shutdown_handler(sig, frame):
@@ -301,20 +302,11 @@ async def run_live_loop(session: aiohttp.ClientSession):
 
             while running:
                 try:
-                    msg = await asyncio.wait_for(websocket.recv(), timeout=60)
+                    sensor_max_gap_s = app_state.get_sensor_max_gap_s()
+                    websocket_idle_timeout_s = max(60.0, float(sensor_max_gap_s) + LIVE_WS_TIMEOUT_MARGIN_S)
+                    msg = await asyncio.wait_for(websocket.recv(), timeout=websocket_idle_timeout_s)
                 except asyncio.TimeoutError:
-                    print("No data received in 60s.")
-                    if app_state.refquery_instance and app_state.current_config.get("main_sensor_id"):
-                        now = datetime.now(timezone.utc)
-                        start_time = time.perf_counter()
-                        dl_disagg = await app_state.refquery_instance.disaggregate_next(0.0, now)
-                        dl_dur = time.perf_counter() - start_time
-                        try:
-                            await publish_disaggregation_dl(0.0, dl_disagg, now, session, dl_dur)
-                        except Exception as pub_err:
-                            print(f"Publish error during idle tick: {pub_err}")
-                    else:
-                        print("NILM instance not available, skipping idle tick.")
+                    print(f"No Home Assistant WebSocket events received in {websocket_idle_timeout_s:.1f}s.")
                     continue
                 except websockets.exceptions.ConnectionClosedOK:
                     print("WebSocket connection closed gracefully.")

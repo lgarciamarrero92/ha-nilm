@@ -15,6 +15,7 @@ from prepare_training_data import (
     parse_power_points,
     zoh_resample_to_grid,
 )
+from runtime_settings import DEFAULT_SENSOR_MAX_GAP_S
 
 
 def _build_sensor_supervision_intervals(
@@ -24,6 +25,7 @@ def _build_sensor_supervision_intervals(
     inference_dir: str,
     align_grid: str = "start",
     max_hold_factor: float = 5.0,
+    max_hold_s: float = DEFAULT_SENSOR_MAX_GAP_S,
     on_threshold_w: float = 20.0,
     min_on_s: float = 60.0,
     min_off_s: float = 300.0,
@@ -44,7 +46,9 @@ def _build_sensor_supervision_intervals(
     if grid_t.size == 0:
         return []
 
-    max_hold_s = float(max_hold_factor) * dt if max_hold_factor and max_hold_factor > 0 else None
+    max_hold_s = float(max_hold_s) if max_hold_s and max_hold_s > 0 else (
+        float(max_hold_factor) * dt if max_hold_factor and max_hold_factor > 0 else None
+    )
     gt_grid = zoh_resample_to_grid(gt_pts, grid_t, max_hold_s=max_hold_s, fill_value=0.0)
     gt_grid = gt_grid.astype("float32")
     gt_grid[gt_grid < 0.0] = 0.0
@@ -155,6 +159,7 @@ async def receive_training_data_handler(request: web.Request) -> web.Response:
                 return web.json_response({"status": "error", "message": f"No {bundle_mode} model bundle is available for training"}, status=400)
 
             try:
+                sensor_max_gap_s = app_state.get_sensor_max_gap_s()
                 prepared = build_embeddings_training_payload(
                     fullSensorHistoryData=full_history,
                     selectedWindows=selected_windows,
@@ -168,7 +173,7 @@ async def receive_training_data_handler(request: web.Request) -> web.Response:
                     num_threads=2,
                     batch_size=app_state.get_batch_size(),
                     align_grid="start",
-                    max_hold_factor=5.0,
+                    max_hold_s=sensor_max_gap_s,
                 )
                 prepared["bundle_id"] = selected_bundle.bundle_id
                 prepared["bundle_mode"] = selected_bundle.mode
@@ -276,12 +281,13 @@ async def receive_training_data_handler(request: web.Request) -> web.Response:
                 return web.json_response({"status": "error", "message": f"No {bundle_mode} model bundle is available for training"}, status=400)
 
             try:
+                sensor_max_gap_s = app_state.get_sensor_max_gap_s()
                 intervals = _build_sensor_supervision_intervals(
                     full_history=full_history,
                     appliance_sensor_history=appliance_sensor_history,
                     inference_dir=selected_bundle.inference_dir,
                     align_grid="start",
-                    max_hold_factor=5.0,
+                    max_hold_s=sensor_max_gap_s,
                 )
             except Exception as exc:
                 print(f"Training sensor interval derivation failed: {exc}", flush=True)

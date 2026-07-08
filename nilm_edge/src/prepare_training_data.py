@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
+from runtime_settings import DEFAULT_SENSOR_MAX_GAP_S
 
 try:
     # Preferred for HA app (lightweight)
@@ -422,6 +423,7 @@ def build_embeddings_training_payload(
     batch_size: int = 1024,
     align_grid: str = "start",
     max_hold_factor: float = 5.0,
+    max_hold_s: Optional[float] = DEFAULT_SENSOR_MAX_GAP_S,
     on_threshold_w: float = 20.0,
     min_on_s: float = 60.0,
     min_off_s: float = 300.0,
@@ -472,7 +474,9 @@ def build_embeddings_training_payload(
         )
 
     # Robust gap handling
-    max_hold_s = float(max_hold_factor) * dt if max_hold_factor and max_hold_factor > 0 else None
+    max_hold_s = float(max_hold_s) if max_hold_s and max_hold_s > 0 else (
+        float(max_hold_factor) * dt if max_hold_factor and max_hold_factor > 0 else None
+    )
     fill_value_w = float(settings.query_mean)  # best default in the query normalization space
 
     y_grid, mains_valid_mask = zoh_resample_to_grid(
@@ -531,7 +535,9 @@ def build_embeddings_training_payload(
     if n_windows_after_gap_filter == 0:
         raise ValueError(
             "No valid training windows remain after removing mains gaps. "
-            "Please choose a cleaner range or reduce missing data."
+            f"This often happens when the mains sensor updates slower than the configured sensor_max_gap_s ({max_hold_s:.1f}s). "
+            "Choose a cleaner range, reduce missing data, or increase sensor_max_gap_s to match the sensor cadence. "
+            "Using a larger gap can reduce NILM accuracy."
         )
 
     # Build extractor inputs and compute embeddings chunk-by-chunk to keep peak RAM bounded.

@@ -9,6 +9,7 @@ from typing import Awaitable, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from embedding_store import is_embedding_marked_deleted, load_embedding_metadata
+from runtime_settings import DEFAULT_SENSOR_MAX_GAP_S
 
 try:
     # Preferred for HA app (lightweight)
@@ -120,6 +121,7 @@ class RefQueryDisaggregator:
         num_threads: int = 2,
         history_fetcher: Optional[HistoryFetcher] = None,
         max_gap_factor: float = 5.0,
+        max_gap_s: Optional[float] = DEFAULT_SENSOR_MAX_GAP_S,
         warm_start_margin_steps: int = 2,
         warm_retry_cooldown_s: float = 300.0,  # retry warm start at most every 5 minutes if desired
         top_k: Optional[int] = None,           # optional gating: only run head for top-K by cosine similarity
@@ -130,6 +132,7 @@ class RefQueryDisaggregator:
         self.num_threads = int(num_threads)
         self.history_fetcher = history_fetcher
         self.max_gap_factor = float(max_gap_factor)
+        self.max_gap_s = float(max_gap_s) if max_gap_s and max_gap_s > 0 else None
         self.warm_start_margin_steps = int(warm_start_margin_steps)
         self.warm_retry_cooldown_s = float(warm_retry_cooldown_s)
         self.top_k = top_k
@@ -343,7 +346,8 @@ class RefQueryDisaggregator:
         # handle long gaps robustly: reset schedule/window (self-heal)
         assert self.last_raw_t is not None
         gap = t - self.last_raw_t
-        if gap > self.max_gap_factor * dt:
+        max_gap_s = self.max_gap_s if self.max_gap_s is not None else self.max_gap_factor * dt
+        if gap > max_gap_s:
             # large gap: treat as discontinuity
             self.reset()
             # re-init
