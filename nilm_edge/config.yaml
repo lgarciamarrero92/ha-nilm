@@ -1,5 +1,5 @@
 name: "NILM"
-version: "1.1.7.1"
+version: "1.1.7.2"
 slug: "nilm"
 description: "Non-Intrusive Load Monitoring For Home Assistant"
 url: "https://ha-nilm.bigwicho.com/"
@@ -16,11 +16,15 @@ ports:
 ingress: true
 
 options:
+  # Embedding/inference batch size used by training preparation and prediction previews.
   batch_size: 1024
+  # Maximum expected mains sensor update gap in seconds. Increase this for slower sensors, but larger gaps can reduce NILM accuracy.
   sensor_max_gap_s: 60
 
 schema:
+  # Keep memory usage bounded on small Home Assistant hosts.
   batch_size: "int(32,8192)"
+  # Accept sensors from near-real-time updates up to minutes cadence
   sensor_max_gap_s: "float(1,3600)"
 
 arch:

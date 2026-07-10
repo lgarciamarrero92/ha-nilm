@@ -1,0 +1,7 @@
+configuration:
+  batch_size:
+    name: Batch size
+    description: Embedding and inference batch size used during training preparation and prediction previews. Lower this if the add-on runs out of memory.
+  sensor_max_gap_s:
+    name: Sensor update cadence
+    description: Maximum expected time, in seconds, between mains sensor updates. Increase this for slower sensors; larger values can reduce NILM accuracy.
