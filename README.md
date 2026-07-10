@@ -6,6 +6,12 @@
 
 <h2 align="center">🔌 Turn your whole-home power sensor into appliance activity and energy insight</h2>
 
+<p align="center">
+  <a href="https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Flgarciamarrero92%2Fha-nilm">
+    <img src="https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg" alt="Open your Home Assistant instance and add the HA-NILM add-on repository">
+  </a>
+</p>
+
 HA-NILM learns your appliance patterns during a short guided training phase, then uses them to estimate real-time appliance activity and energy usage from your whole-home power meter, locally in Home Assistant.
 
 <p align="center">
