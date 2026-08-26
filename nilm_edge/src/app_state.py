@@ -35,11 +35,122 @@ if not INGRESS_URL_BASE.endswith("/"):
 current_config = {
     "main_sensor_id": (os.getenv("MAIN_SENSOR", "").strip() or None),
     "main_sensor_unit": None,
+    "mains": [],
+    "appliance_mains": {},
     "training_server_url": None,
 }
 
 refquery_instance = None
 model_bundles = []
+
+
+def _mains_label(sensor_id: str, index: int = 0) -> str:
+    sensor = str(sensor_id or "").strip()
+    if not sensor:
+        return "Main"
+    tail = sensor.split(".", 1)[-1].replace("_", " ").strip()
+    return tail.title() if tail else f"Main {index + 1}"
+
+
+def normalize_mains_config(config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    cfg = current_config if config is None else config
+    mains = []
+    seen = set()
+    raw_mains = cfg.get("mains")
+    if isinstance(raw_mains, list):
+        for index, item in enumerate(raw_mains):
+            if not isinstance(item, dict):
+                continue
+            sensor_id = str(item.get("sensor_id") or "").strip()
+            if not sensor_id or sensor_id in seen:
+                continue
+            seen.add(sensor_id)
+            unit = (str(item.get("unit")).strip() if item.get("unit") is not None else None) or None
+            label = (str(item.get("label")).strip() if item.get("label") is not None else None) or _mains_label(sensor_id, index)
+            mains.append({"sensor_id": sensor_id, "label": label, "unit": unit})
+
+    legacy_sensor_id = (str(cfg.get("main_sensor_id")).strip() if cfg.get("main_sensor_id") is not None else None) or None
+    legacy_unit = (str(cfg.get("main_sensor_unit")).strip() if cfg.get("main_sensor_unit") is not None else None) or None
+    if legacy_sensor_id and legacy_sensor_id not in seen and not mains:
+        mains.insert(0, {
+            "sensor_id": legacy_sensor_id,
+            "label": _mains_label(legacy_sensor_id, 0),
+            "unit": legacy_unit,
+        })
+
+    if mains:
+        primary = mains[0]
+        cfg["main_sensor_id"] = primary["sensor_id"]
+        cfg["main_sensor_unit"] = primary.get("unit")
+    else:
+        cfg["main_sensor_id"] = None
+        cfg["main_sensor_unit"] = None
+    cfg["mains"] = mains
+
+    valid_mains_ids = {str(item.get("sensor_id") or "").strip() for item in mains}
+    assignments = {}
+    raw_assignments = cfg.get("appliance_mains")
+    if isinstance(raw_assignments, dict):
+        for model_key, sensor_id in raw_assignments.items():
+            key = str(model_key or "").strip()
+            if not key:
+                continue
+            assigned_sensor_id = None if sensor_id is None else str(sensor_id).strip()
+            assignments[key] = assigned_sensor_id if assigned_sensor_id in valid_mains_ids else None
+    cfg["appliance_mains"] = assignments
+    return cfg
+
+
+def get_mains() -> list[Dict[str, Any]]:
+    normalize_mains_config()
+    return [dict(item) for item in current_config.get("mains") or []]
+
+
+def get_primary_mains_sensor_id() -> Optional[str]:
+    mains = get_mains()
+    return str(mains[0].get("sensor_id") or "").strip() if mains else None
+
+
+def get_mains_entry(sensor_id: Optional[str]) -> Optional[Dict[str, Any]]:
+    target = str(sensor_id or "").strip()
+    if not target:
+        return None
+    for item in get_mains():
+        if item.get("sensor_id") == target:
+            return item
+    return None
+
+
+def get_model_mains_assignment(model_key: str) -> Dict[str, Any]:
+    normalize_mains_config()
+    key = str(model_key or "").strip()
+    assignments = current_config.get("appliance_mains") or {}
+    explicit = key in assignments
+    assigned = assignments.get(key) if explicit else get_primary_mains_sensor_id()
+    if assigned is not None:
+        assigned = str(assigned).strip() or None
+    return {"sensor_id": assigned, "explicit": explicit}
+
+
+def set_model_mains_assignment(model_key: str, sensor_id):
+    key = str(model_key or "").strip()
+    if not key:
+        return
+    normalize_mains_config()
+    assignments = dict(current_config.get("appliance_mains") or {})
+    assignments[key] = None if sensor_id is None else str(sensor_id).strip()
+    save_config(appliance_mains=assignments, update_appliance_mains=True)
+
+
+def remove_model_mains_assignment(model_key: str):
+    key = str(model_key or "").strip()
+    if not key:
+        return
+    normalize_mains_config()
+    assignments = dict(current_config.get("appliance_mains") or {})
+    if key in assignments:
+        assignments.pop(key, None)
+        save_config(appliance_mains=assignments, update_appliance_mains=True)
 
 
 async def maybe_await(value):
@@ -63,7 +174,13 @@ async def resolve_sensor_unit(entity_id: Optional[str]) -> Optional[str]:
                 payload = await response.json()
         unit = str(payload.get("attributes", {}).get("unit_of_measurement") or "").strip() or None
         if unit:
-            current_config["main_sensor_unit"] = unit
+            normalize_mains_config()
+            for mains in current_config.get("mains") or []:
+                if mains.get("sensor_id") == sensor:
+                    mains["unit"] = unit
+                    break
+            if current_config.get("main_sensor_id") == sensor:
+                current_config["main_sensor_unit"] = unit
         return unit
     except Exception as exc:
         print(f"Warning: could not resolve unit for {sensor}: {exc}")
@@ -121,12 +238,13 @@ def get_sensor_max_gap_s() -> float:
     return clamp_sensor_max_gap_s(options.get("sensor_max_gap_s"))
 
 
-async def history_fetcher(start_dt, end_dt):
-    sensor_id = current_config.get("main_sensor_id")
+async def fetch_mains_history(sensor_id, start_dt, end_dt):
+    sensor_id = str(sensor_id or "").strip()
     if not sensor_id:
         return []
 
-    sensor_unit = current_config.get("main_sensor_unit") or await resolve_sensor_unit(sensor_id)
+    mains_entry = get_mains_entry(sensor_id)
+    sensor_unit = (mains_entry or {}).get("unit") or await resolve_sensor_unit(sensor_id)
 
     query = HistoryQuery(
         entity_id=sensor_id,
@@ -140,6 +258,10 @@ async def history_fetcher(start_dt, end_dt):
         return [(float(ts), normalize_power_to_watts(value, sensor_unit)) for ts, value in raw_points]
     except Exception:
         return raw_points
+
+
+async def history_fetcher(start_dt, end_dt):
+    return await fetch_mains_history(get_primary_mains_sensor_id(), start_dt, end_dt)
 
 
 def _is_direct_training_server_url(url: str) -> bool:
@@ -230,21 +352,24 @@ async def resolve_training_server_url_state() -> Dict[str, Any]:
 def load_config():
     if not os.path.exists(CONFIG_FILE_PATH):
         print(f"No config file found at {CONFIG_FILE_PATH}. Using default values.")
+        normalize_mains_config()
         return
 
     try:
         with open(CONFIG_FILE_PATH, "r", encoding="utf-8") as file_handle:
             loaded_config = json.load(file_handle)
-        loaded_sensor_id = loaded_config.get("main_sensor_id", current_config["main_sensor_id"])
-        loaded_sensor_unit = loaded_config.get("main_sensor_unit", current_config["main_sensor_unit"])
+        if not isinstance(loaded_config, dict):
+            raise ValueError("config.json must contain a JSON object")
+        loaded_config = {**current_config, **loaded_config}
         loaded_training_server_url = loaded_config.get("training_server_url", current_config["training_server_url"])
-        current_config["main_sensor_id"] = (str(loaded_sensor_id).strip() if loaded_sensor_id is not None else None) or None
-        current_config["main_sensor_unit"] = (str(loaded_sensor_unit).strip() if loaded_sensor_unit is not None else None) or None
+        current_config.clear()
+        current_config.update(loaded_config)
         current_config["training_server_url"] = (
             normalize_training_server_url(str(loaded_training_server_url).strip())
             if loaded_training_server_url
             else None
         )
+        normalize_mains_config()
         print(f"Configuration loaded from {CONFIG_FILE_PATH}")
     except json.JSONDecodeError as exc:
         print(f"Error decoding config.json: {exc}. Using current in-memory values.")
@@ -256,21 +381,36 @@ def save_config(
     *,
     main_sensor_id=None,
     main_sensor_unit=None,
+    mains=None,
+    appliance_mains=None,
     training_server_url=None,
     update_main_sensor_id=False,
     update_main_sensor_unit=False,
+    update_mains=False,
+    update_appliance_mains=False,
     update_training_server_url=False,
 ):
     if update_main_sensor_id:
         current_config["main_sensor_id"] = (str(main_sensor_id).strip() if main_sensor_id is not None else None) or None
     if update_main_sensor_unit:
         current_config["main_sensor_unit"] = (str(main_sensor_unit).strip() if main_sensor_unit is not None else None) or None
+    if update_mains:
+        current_config["mains"] = mains if isinstance(mains, list) else []
+        if not update_main_sensor_id:
+            primary = current_config["mains"][0] if current_config["mains"] else {}
+            current_config["main_sensor_id"] = (str(primary.get("sensor_id")).strip() if primary.get("sensor_id") is not None else None) or None
+        if not update_main_sensor_unit:
+            primary = current_config["mains"][0] if current_config["mains"] else {}
+            current_config["main_sensor_unit"] = (str(primary.get("unit")).strip() if primary.get("unit") is not None else None) or None
+    if update_appliance_mains:
+        current_config["appliance_mains"] = appliance_mains if isinstance(appliance_mains, dict) else {}
     if update_training_server_url:
         current_config["training_server_url"] = (
             normalize_training_server_url(str(training_server_url).strip())
             if training_server_url is not None and str(training_server_url).strip()
             else None
         )
+    normalize_mains_config()
     try:
         os.makedirs(os.path.dirname(CONFIG_FILE_PATH), exist_ok=True)
         with open(CONFIG_FILE_PATH, "w", encoding="utf-8") as file_handle:
@@ -304,8 +444,10 @@ def reload_algorithm_config():
             models_root=MODELS_ROOT,
             num_threads=2,
             history_fetcher=history_fetcher,
+            mains_history_fetcher=fetch_mains_history,
             max_gap_s=get_sensor_max_gap_s(),
             top_k=None,
+            mains_assignment_resolver=lambda model_key: get_model_mains_assignment(model_key).get("sensor_id"),
         )
         print("Algorithm configuration reloaded successfully.")
     except Exception as exc:

@@ -117,6 +117,7 @@ async def receive_training_data_handler(request: web.Request) -> web.Response:
             appliance_name = str(data.get("appliance_name") or "").strip()
             supervision_mode = str(data.get("supervision_mode") or "intervals").strip().lower()
             appliance_sensor_id = str(data.get("appliance_sensor_id") or "").strip() or None
+            main_sensor_id = str(data.get("main_sensor_id") or data.get("mains_sensor_id") or "").strip() or app_state.get_primary_mains_sensor_id()
             bundle_id = str(data.get("bundle_id") or "").strip() or None
             bundle_mode = str(data.get("bundle_mode") or "online").strip().lower()
             selected_windows = data.get("selectedWindows")
@@ -134,6 +135,10 @@ async def receive_training_data_handler(request: web.Request) -> web.Response:
 
             if not appliance_name:
                 return web.json_response({"status": "error", "message": "appliance_name is required"}, status=400)
+            if not main_sensor_id:
+                return web.json_response({"status": "error", "message": "main_sensor_id is required"}, status=400)
+            if app_state.get_mains_entry(main_sensor_id) is None:
+                return web.json_response({"status": "error", "message": f"Unknown main_sensor_id: {main_sensor_id}"}, status=400)
             if not isinstance(full_history, list) or len(full_history) == 0:
                 return web.json_response({"status": "error", "message": "fullSensorHistoryData must be a non-empty list"}, status=400)
             if supervision_mode not in ("intervals", "sensor"):
@@ -178,6 +183,7 @@ async def receive_training_data_handler(request: web.Request) -> web.Response:
                 prepared["bundle_id"] = selected_bundle.bundle_id
                 prepared["bundle_mode"] = selected_bundle.mode
                 prepared["bundle_version"] = selected_bundle.model_version
+                prepared["main_sensor_id"] = main_sensor_id
                 print(
                     "Training prepare completed "
                     f"appliance={appliance_name} bundle={selected_bundle.bundle_id} "

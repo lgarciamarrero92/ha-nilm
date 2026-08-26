@@ -219,6 +219,10 @@
         border: 1px solid #e2e8f0;
     }
 
+    .toolbar-panel-wide {
+        grid-column: 1 / -1;
+    }
+
     .chart-container {
         cursor: grab;
         position: relative;
@@ -1141,6 +1145,13 @@
             </div>
 
             <div id="trainingIntervalToolbarPanel" class="toolbar-panel">
+                <div id="trainingMainsToolbarPanel" class="toolbar-panel-wide">
+                    <label for="trainingMainsSelect" class="field-label">Mains Power Sensor</label>
+                    <select id="trainingMainsSelect" class="field-input" required>
+                        <option value="">Select a mains power sensor</option>
+                    </select>
+                    <p id="trainingMainsError" class="text-red-500 text-xs mt-1 hidden">Select a mains power sensor for this appliance model.</p>
+                </div>
                 <div>
                     <label for="trainingRangeStartInput" class="field-label">Start</label>
                     <input type="text" id="trainingRangeStartInput" class="field-input" placeholder="dd/mm/yyyy hh:mm">
@@ -1149,7 +1160,7 @@
                     <label for="trainingRangeEndInput" class="field-label">End</label>
                     <input type="text" id="trainingRangeEndInput" class="field-input" placeholder="dd/mm/yyyy hh:mm">
                 </div>
-                <div class="md:col-span-2">
+                <div class="toolbar-panel-wide">
                     <label class="field-label">Quick Range</label>
                     <div class="training-range-actions">
                     <div id="trainingQuickRangeButtons" class="training-quick-range-buttons">
@@ -1446,6 +1457,7 @@
     let trainingPrepareOverview;
     let trainingChartSectionTitle;
     let trainingChartSectionCopy;
+    let trainingMainsToolbarPanel;
     let trainingIntervalToolbarPanel;
     let previewSection;
     let jobsUI = null;
@@ -1471,6 +1483,8 @@
     let selectModeTooltipTimer = null;
 
     let applianceNameInput;
+    let trainingMainsSelect;
+    let trainingMainsError;
     let supervisionModeSelect;
     let supervisionModeHint;
     let sensorSupervisionSection;
@@ -1541,6 +1555,7 @@
     // --- FIX: Define MAIN_SENSOR_ENTITY_ID for history API calls ---
     let MAIN_SENSOR_ENTITY_ID = "";
     let MAIN_SENSOR_UNIT = "";
+    let TRAINING_MAINS = [];
     let availablePowerSensorsById = new Map();
     let availableBinarySensorsById = new Map();
     let trainingJobId = null;
@@ -1616,6 +1631,7 @@
             const supervisionMode = currentSupervisionMode();
             const applianceName = applianceNameInput?.value?.trim() || "Not entered yet";
             const trainingServerLabel = trainingServerUrlSelect?.selectedOptions?.[0]?.textContent?.trim() || "Not selected yet";
+            const selectedMainsLabel = trainingMainsSelect?.selectedOptions?.[0]?.textContent?.trim() || "No mains power sensor selected";
             const rangeValue = Number.isFinite(firstTimestamp) && Number.isFinite(lastTimestamp) && lastTimestamp > firstTimestamp
                 ? `${formatUiDateTime(firstTimestamp)} to ${formatUiDateTime(lastTimestamp)}`
                 : "Load a mains interval in step 3";
@@ -1638,6 +1654,7 @@
             trainingPrepareOverview.innerHTML = [
                 renderTrainingOverviewItem("Training Server", trainingServerLabel, trainingServerConnectionReady ? "Connection ready." : "Connection not ready yet."),
                 renderTrainingOverviewItem("Appliance Name", applianceName, "This name will be used for the trained model and Home Assistant entities."),
+                renderTrainingOverviewItem("Mains Power Sensor", selectedMainsLabel, MAIN_SENSOR_ENTITY_ID || "Select a mains power sensor before preparing training data."),
                 renderTrainingOverviewItem("Mains Range", rangeValue, intervalDurationHours ? `Duration: ${intervalDurationHours} h` : ""),
                 renderTrainingOverviewItem("Supervision", supervisionValue, supervisionHelp),
                 renderTrainingOverviewItem("Labels", labelsValue, labelsHelp),
@@ -2046,6 +2063,7 @@
 
         function currentTrainingStepperState() {
             const serverReady = Boolean(trainingServerConnectionReady);
+            const mainsReady = Boolean(trainingMainsSelect?.value);
             const applianceReady = Boolean(applianceNameInput?.value?.trim());
             const intervalDataReady = Array.isArray(fullSensorHistoryData)
                 && fullSensorHistoryData.length > 0
@@ -2059,7 +2077,7 @@
             const prepareReady = Boolean(trainingJobId);
             const trainReady = Array.isArray(pendingJobEvents)
                 && pendingJobEvents.some((event) => event?.kind === "sent");
-            return { serverReady, applianceReady, intervalDataReady, intervalReady, labelsReady, prepareReady, trainReady };
+            return { serverReady, mainsReady, applianceReady, intervalDataReady, intervalReady, labelsReady, prepareReady, trainReady };
         }
 
         function validateTrainingWizardStep(stepKey, { showErrors = true } = {}) {
@@ -2084,6 +2102,14 @@
             }
 
             if (stepKey === "interval") {
+                const hasMains = Boolean(trainingMainsSelect?.value);
+                if (trainingMainsError) trainingMainsError.classList.toggle("hidden", hasMains);
+                if (!hasMains) {
+                    if (showErrors) {
+                        showValidationResultModal("Mains Power Sensor Required", "Please select the mains power sensor used to train this appliance model.", true);
+                    }
+                    return false;
+                }
                 if (state.intervalDataReady) return true;
                 if (showErrors) {
                     showValidationResultModal("Training Interval Required", "Please load the mains history interval that will be used for training before continuing.", true);
@@ -2219,6 +2245,7 @@
                 clearAllSelectionsBtn.classList.toggle('hidden', !isLabelsStep || isSensorMode);
                 clearAllSelectionsBtn.disabled = !isLabelsStep || isSensorMode;
             }
+            if (trainingMainsToolbarPanel) trainingMainsToolbarPanel.classList.toggle('hidden', !isIntervalStep);
             if (trainingIntervalToolbarPanel) trainingIntervalToolbarPanel.classList.toggle('hidden', !isIntervalStep);
             if (selectionAssistantSection) selectionAssistantSection.classList.toggle('hidden', !isLabelsStep || isSensorMode);
             if (sensorSupervisionSection) sensorSupervisionSection.classList.toggle('hidden', !isLabelsStep || !isSensorMode);
@@ -4128,6 +4155,11 @@
                 showValidationResultModal("Appliance Name Required", "Please enter an appliance name.", true);
                 return;
             }
+            if (!trainingMainsSelect || !trainingMainsSelect.value) {
+                if (trainingMainsError) trainingMainsError.classList.remove("hidden");
+                showValidationResultModal("Mains Power Sensor Required", "Please select the mains power sensor used to train this appliance model.", true);
+                return;
+            }
             if (supervisionMode === 'sensor' && (!applianceSensorSelect || !applianceSensorSelect.value)) {
                 showValidationResultModal("Sensor Required", "Please select the appliance power sensor for ground-truth supervision.", true);
                 return;
@@ -4156,6 +4188,7 @@
 
                 const payload = {
                     appliance_name: applianceNameInput.value.trim(),
+                    main_sensor_id: trainingMainsSelect.value,
                     supervision_mode: supervisionMode,
                     appliance_sensor_id: applianceSensorSelect?.value || null,
                     selectedWindows: selectedWindows,
@@ -4391,7 +4424,7 @@
                     const startDateForPath = encodeURIComponent(toIsoUtcNoMs(startDateObj));
                     const endDateForQuery = encodeURIComponent(toIsoUtcNoMs(endDateObj));
                     
-                    url = `history/period/${startDateForPath}?end_time=${endDateForQuery}&filter_entity_id=${MAIN_SENSOR_ENTITY_ID}`;
+                    url = `history/period/${startDateForPath}?end_time=${endDateForQuery}&filter_entity_id=${encodeURIComponent(MAIN_SENSOR_ENTITY_ID)}`;
                 } else {
                     const today = new Date();
                     const defaultEndDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
@@ -4402,7 +4435,7 @@
                     
                     const startDateForPath = encodeURIComponent(toIsoUtcNoMs(defaultStartDate));
                     const endDateForQuery = encodeURIComponent(toIsoUtcNoMs(defaultEndDate));
-                    url = `history/period/${startDateForPath}?end_time=${endDateForQuery}&filter_entity_id=${MAIN_SENSOR_ENTITY_ID}`;
+                    url = `history/period/${startDateForPath}?end_time=${endDateForQuery}&filter_entity_id=${encodeURIComponent(MAIN_SENSOR_ENTITY_ID)}`;
                     requestedStartMs = defaultStartDate.getTime();
                     requestedEndMs = defaultEndDate.getTime();
                 }
@@ -4546,6 +4579,23 @@
             if (clearAllSelectionsBtn) clearAllSelectionsBtn.addEventListener('click', showClearConfirmModal);
             if (checkAllDataBtn) checkAllDataBtn.addEventListener('click', handleCheckAllData);
             if (applianceNameInput) applianceNameInput.addEventListener('input', handleApplianceNameInput);
+            if (trainingMainsSelect) {
+                trainingMainsSelect.addEventListener('change', async () => {
+                    const selected = TRAINING_MAINS.find((mains) => mains.sensor_id === trainingMainsSelect.value);
+                    MAIN_SENSOR_ENTITY_ID = selected?.sensor_id || "";
+                    MAIN_SENSOR_UNIT = selected?.unit || availablePowerSensorsById.get(MAIN_SENSOR_ENTITY_ID)?.unit_of_measurement || "";
+                    if (trainingMainsError) trainingMainsError.classList.toggle('hidden', Boolean(MAIN_SENSOR_ENTITY_ID));
+                    populateApplianceSensorSelect(Array.from(availablePowerSensorsById.values()), MAIN_SENSOR_ENTITY_ID);
+                    trainingJobId = null;
+                    pendingJobEvents = [];
+                    updateTrainingStepper();
+                    const startMs = currentChartMinTime || firstTimestamp || null;
+                    const endMs = currentChartMaxTime || lastTimestamp || null;
+                    if (MAIN_SENSOR_ENTITY_ID && Number.isFinite(startMs) && Number.isFinite(endMs) && endMs > startMs) {
+                        await fetchSensorHistoryData(startMs, endMs);
+                    }
+                });
+            }
             if (applianceSensorSelect) {
                 applianceSensorSelect.addEventListener('change', async () => {
                     resetTrainingDraftState({ preserveSensorSelection: true, preserveIntervalConfirmation: true });
@@ -4857,6 +4907,8 @@
         clearAllSelectionsBtn = document.getElementById('clearAllSelectionsBtn');
 
         applianceNameInput = document.getElementById('applianceNameInput');
+        trainingMainsSelect = document.getElementById('trainingMainsSelect');
+        trainingMainsError = document.getElementById('trainingMainsError');
         supervisionModeSelect = document.getElementById('supervisionModeSelect');
         supervisionModeHint = document.getElementById('supervisionModeHint');
         sensorSupervisionSection = document.getElementById('sensorSupervisionSection');
@@ -4903,6 +4955,7 @@
         trainingWizardStatus = document.getElementById("trainingWizardStatus");
         trainingChartSectionTitle = document.getElementById("trainingChartSectionTitle");
         trainingChartSectionCopy = document.getElementById("trainingChartSectionCopy");
+        trainingMainsToolbarPanel = document.getElementById("trainingMainsToolbarPanel");
         trainingIntervalToolbarPanel = document.getElementById("trainingIntervalToolbarPanel");
         previewSection = document.getElementById("previewSection");
 
@@ -5060,8 +5113,36 @@
             }
         }
 
+        function populateTrainingMainsSelect(mains, selectedSensorId = "") {
+            TRAINING_MAINS = Array.isArray(mains) ? mains.filter((item) => item?.sensor_id) : [];
+            if (!trainingMainsSelect) return;
+            trainingMainsSelect.innerHTML = "";
+            if (!TRAINING_MAINS.length) {
+                trainingMainsSelect.innerHTML = `<option value="">No mains power sensors configured</option>`;
+                trainingMainsSelect.disabled = true;
+                if (trainingMainsError) trainingMainsError.classList.remove("hidden");
+                return;
+            }
+            trainingMainsSelect.disabled = false;
+            TRAINING_MAINS.forEach((mainsEntry) => {
+                const option = document.createElement("option");
+                option.value = mainsEntry.sensor_id;
+                option.textContent = mainsEntry.label || mainsEntry.sensor_id;
+                trainingMainsSelect.appendChild(option);
+            });
+            const nextValue = selectedSensorId && TRAINING_MAINS.some((item) => item.sensor_id === selectedSensorId)
+                ? selectedSensorId
+                : TRAINING_MAINS[0].sensor_id;
+            trainingMainsSelect.value = nextValue;
+            MAIN_SENSOR_ENTITY_ID = nextValue;
+            const selected = TRAINING_MAINS.find((item) => item.sensor_id === nextValue);
+            MAIN_SENSOR_UNIT = selected?.unit || MAIN_SENSOR_UNIT || "";
+            if (trainingMainsError) trainingMainsError.classList.add("hidden");
+        }
+
         fetchConfig().then(async cfg => {
-            if (cfg?.main_sensor_id) MAIN_SENSOR_ENTITY_ID = cfg.main_sensor_id;
+            populateTrainingMainsSelect(cfg?.mains, cfg?.main_sensor_id);
+            if (cfg?.main_sensor_id && !MAIN_SENSOR_ENTITY_ID) MAIN_SENSOR_ENTITY_ID = cfg.main_sensor_id;
             MAIN_SENSOR_UNIT = cfg?.main_sensor_unit || "";
             updateTrainingServerConfigUi(cfg || {});
             try {

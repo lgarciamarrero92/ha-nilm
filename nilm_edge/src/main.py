@@ -265,11 +265,11 @@ def build_web_app():
 async def run_live_loop(session: aiohttp.ClientSession):
     websocket = None
     backoff = 1
-    subscribed_sensor = None
+    subscribed_sensors = set()
 
     while running:
         try:
-            sensor_to_monitor = app_state.current_config.get("main_sensor_id")
+            sensors_to_monitor = {item["sensor_id"] for item in app_state.get_mains() if item.get("sensor_id")}
             websocket = await retry_websocket_connection(app_state.HA_WS_URL)
 
             initial_auth_reply = json.loads(await websocket.recv())
@@ -293,11 +293,11 @@ async def run_live_loop(session: aiohttp.ClientSession):
                 )
 
             await websocket.send(json.dumps({"id": 1, "type": "subscribe_events", "event_type": "state_changed"}))
-            if sensor_to_monitor:
-                print(f"Listening to {sensor_to_monitor} via HA WebSocket...")
+            if sensors_to_monitor:
+                print(f"Listening to {', '.join(sorted(sensors_to_monitor))} via HA WebSocket...")
             else:
                 print("No mains sensor configured yet. Waiting for the user to select one before running NILM.")
-            subscribed_sensor = sensor_to_monitor
+            subscribed_sensors = set(sensors_to_monitor)
             backoff = 1
 
             while running:
@@ -313,36 +313,43 @@ async def run_live_loop(session: aiohttp.ClientSession):
                     break
 
                 try:
-                    sensor_to_monitor = app_state.current_config.get("main_sensor_id")
-                    if subscribed_sensor != sensor_to_monitor:
-                        if sensor_to_monitor:
-                            print(f"Detected mains sensor change. Now filtering events for {sensor_to_monitor}.")
+                    sensors_to_monitor = {item["sensor_id"] for item in app_state.get_mains() if item.get("sensor_id")}
+                    if subscribed_sensors != sensors_to_monitor:
+                        if sensors_to_monitor:
+                            print(f"Detected mains sensor change. Now filtering events for {', '.join(sorted(sensors_to_monitor))}.")
                         else:
                             print("Main sensor selection cleared. NILM will stay idle until a mains sensor is saved.")
-                        subscribed_sensor = sensor_to_monitor
+                        subscribed_sensors = set(sensors_to_monitor)
 
                     event = json.loads(msg)
-                    if not sensor_to_monitor:
+                    if not sensors_to_monitor:
                         continue
                     new_state = event.get("event", {}).get("data", {}).get("new_state")
-                    if not new_state or new_state.get("entity_id") != sensor_to_monitor:
+                    event_entity_id = new_state.get("entity_id") if new_state else None
+                    if not new_state or event_entity_id not in sensors_to_monitor:
                         continue
 
                     sensor_unit = (
                         new_state.get("attributes", {}).get("unit_of_measurement")
-                        or app_state.current_config.get("main_sensor_unit")
+                        or (app_state.get_mains_entry(event_entity_id) or {}).get("unit")
                     )
-                    if sensor_unit and sensor_unit != app_state.current_config.get("main_sensor_unit"):
-                        app_state.current_config["main_sensor_unit"] = str(sensor_unit).strip()
+                    if sensor_unit:
+                        for mains in app_state.current_config.get("mains") or []:
+                            if mains.get("sensor_id") == event_entity_id:
+                                mains["unit"] = str(sensor_unit).strip()
+                                break
+                        if app_state.current_config.get("main_sensor_id") == event_entity_id:
+                            app_state.current_config["main_sensor_unit"] = str(sensor_unit).strip()
 
                     total_power = normalize_power_to_watts(new_state["state"], sensor_unit)
                     now = datetime.now(timezone.utc)
 
                     if app_state.refquery_instance:
                         start_time = time.perf_counter()
-                        dl_disagg = await app_state.refquery_instance.disaggregate_next(total_power, now)
+                        dl_disagg = await app_state.refquery_instance.disaggregate_next(total_power, now, mains_sensor_id=event_entity_id)
                         dl_dur = time.perf_counter() - start_time
-                        await publish_disaggregation_dl(total_power, dl_disagg, now, session, dl_dur)
+                        is_primary = event_entity_id == app_state.get_primary_mains_sensor_id()
+                        await publish_disaggregation_dl(total_power, dl_disagg, now, session, dl_dur if is_primary else None)
                     else:
                         print("NILM instance not available, skipping disaggregation.")
                 except Exception as exc:

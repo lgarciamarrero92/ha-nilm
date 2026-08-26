@@ -330,6 +330,8 @@ def write_chunk_payload(model_entries, chunk_predictions_by_model):
                 predictions.append({
                     "model_key": entry["model_key"],
                     "model_name": entry["model_name"],
+                    "main_sensor_id": entry.get("main_sensor_id"),
+                    "mains_sensor_id": entry.get("mains_sensor_id") or entry.get("main_sensor_id"),
                     "power_series": power_series,
                     "baseload_series": prediction.get("baseload_series") or [],
                     "state_series": state_series,
@@ -360,6 +362,8 @@ def write_result_payload_from_spool(result_path, mode, model_entries, spool):
                 json.dump({
                     "model_key": entry["model_key"],
                     "model_name": entry["model_name"],
+                    "main_sensor_id": entry.get("main_sensor_id"),
+                    "mains_sensor_id": entry.get("mains_sensor_id") or entry.get("main_sensor_id"),
                     "power_series": prediction.get("power_series", []),
                     "baseload_series": prediction.get("baseload_series", []),
                     "state_series": prediction.get("state_series", []),
@@ -636,6 +640,8 @@ def main():
                 predictions.append({
                     "model_key": entry["model_key"],
                     "model_name": entry["model_name"],
+                    "main_sensor_id": entry.get("main_sensor_id"),
+                    "mains_sensor_id": entry.get("mains_sensor_id") or entry.get("main_sensor_id"),
                     "power_series": prediction.get("power_series", []),
                     "baseload_series": prediction.get("baseload_series", []),
                     "state_series": prediction.get("state_series", []),

@@ -28,7 +28,7 @@ from training_server_client import (
 from embedding_store import bundle_models_dir, load_embedding_metadata
 from training_payload import training_server_payload_from_prepared, summarize_training_server_payload
 from embedding_store import save_embedding_metadata
-from model_registry import get_bundle_by_id
+from model_registry import get_bundle_by_id, make_model_key
 from ha_client import call_ha_service
 
 
@@ -437,6 +437,7 @@ class TrainingServerServiceManager:
             "appliance_type": prepared.get("appliance_type"),
             "supervision_mode": prepared.get("supervision_mode"),
             "appliance_sensor_id": prepared.get("appliance_sensor_id"),
+            "main_sensor_id": prepared.get("main_sensor_id"),
             "bundle_id": prepared.get("bundle_id"),
             "bundle_mode": prepared.get("bundle_mode"),
             "bundle_version": prepared.get("bundle_version"),
@@ -734,6 +735,7 @@ class TrainingServerServiceManager:
                     "stats": prepared_job.get("stats", {}) or {},
                     "supervision_mode": prepared_job.get("supervision_mode"),
                     "appliance_sensor_id": prepared_job.get("appliance_sensor_id"),
+                    "main_sensor_id": prepared_job.get("main_sensor_id"),
                     "job_id": job_id,
                     "training_server_job_id": training_server_job_id,
                     "onoff_threshold": float(deployment_onoff_threshold),
@@ -745,6 +747,7 @@ class TrainingServerServiceManager:
                     "trainer_onoff_f1": trainer_onoff_f1,
                 },
             )
+            app_state.set_model_mains_assignment(make_model_key(bundle_id, str(appliance_name)), prepared_job.get("main_sensor_id"))
 
             await self._maybe_reload_algorithm()
 

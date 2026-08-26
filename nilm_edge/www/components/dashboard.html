@@ -39,6 +39,7 @@
         display: grid;
         grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.9fr);
         gap: 20px;
+        align-items: start;
     }
 
     .panel {
@@ -59,12 +60,167 @@
         color: #475569;
     }
 
+    .models-panel {
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        height: calc(100vh - 96px);
+        max-height: 720px;
+        overflow-x: hidden;
+        overflow-y: auto;
+        scrollbar-gutter: stable;
+        -webkit-overflow-scrolling: touch;
+    }
+
     .control-row {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr) auto auto;
         gap: 12px;
         align-items: end;
         margin-bottom: 16px;
+    }
+
+    .mains-group {
+        border: 1px solid #bfdbfe;
+        border-radius: 12px;
+        background: #ffffff;
+        overflow: hidden;
+        box-shadow: none;
+    }
+
+    .mains-group-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 6px;
+        align-items: center;
+        padding: 8px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #ffffff;
+    }
+
+    .mains-group-identity {
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr);
+        gap: 6px;
+        align-items: center;
+        min-width: 0;
+    }
+
+    .mains-group-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        background: linear-gradient(135deg, #0284c7, #2563eb);
+        box-shadow: none;
+        font-size: 0.78rem;
+    }
+
+    .mains-group-title {
+        color: #0f172a;
+        font-size: 0.82rem;
+        font-weight: 900;
+        line-height: 1.15;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .mains-group-meta {
+        color: #64748b;
+        font-size: 0.68rem;
+        margin-top: 2px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .mains-group-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .mains-icon-btn {
+        width: 26px;
+        height: 26px;
+        border-radius: 8px;
+        border: 1px solid #bfdbfe;
+        background: #eaf3ff;
+        color: #2563eb;
+        font-size: 0.78rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .mains-icon-btn:hover {
+        transform: translateY(-1px);
+        background: #dbeafe;
+        box-shadow: none;
+    }
+
+    .mains-icon-btn-danger {
+        border-color: #ef4444;
+        background: #dc2626;
+        color: #ffffff;
+    }
+
+    .mains-icon-btn-danger:hover {
+        background: #b91c1c;
+        box-shadow: none;
+    }
+
+    .mains-group-unassigned .mains-group-icon {
+        background: #fffbeb;
+        border: 1px solid #fbbf24;
+        color: #92400e;
+    }
+
+    .mains-form-status {
+        color: #b91c1c;
+        font-size: 0.85rem;
+        margin-top: 8px;
+        font-weight: 700;
+    }
+
+    .mains-form-status:not(:empty) {
+        padding: 8px 10px;
+        border: 1px solid #fecaca;
+        border-radius: 10px;
+        background: #fff1f2;
+    }
+
+    .mains-empty-hint {
+        display: none;
+        margin-top: 8px;
+        padding: 8px 10px;
+        border: 1px solid #fbbf24;
+        border-radius: 10px;
+        background: #fffbeb;
+        color: #92400e;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .mains-empty-hint.active {
+        display: block;
+    }
+
+    .mains-empty-hint button {
+        border: 0;
+        padding: 0;
+        background: transparent;
+        color: #1d4ed8;
+        font: inherit;
+        font-weight: 900;
+        cursor: pointer;
+        text-decoration: underline;
     }
 
     .field-label {
@@ -123,6 +279,13 @@
 
     .models-stats-grid {
         grid-template-columns: 1fr;
+        flex: 0 0 auto;
+        margin-bottom: 8px;
+    }
+
+    .models-panel .stat-card {
+        padding: 10px;
+        border-radius: 10px;
     }
 
     .stat-card {
@@ -148,8 +311,8 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 12px;
-        margin-top: 8px;
+        gap: 8px;
+        margin-top: 4px;
     }
 
     .models-stat-row .stat-value {
@@ -161,6 +324,7 @@
         margin: 0;
         flex: 0 0 auto;
         white-space: nowrap;
+        padding: 8px 10px;
     }
 
     .chart-shell {
@@ -533,10 +697,13 @@
     .embedding-list {
         display: flex;
         flex-direction: column;
-        gap: 12px;
-        max-height: 540px;
-        overflow-y: auto;
-        padding-right: 4px;
+        gap: 6px;
+        flex: 0 0 auto;
+        min-height: 0;
+        max-height: none;
+        overflow: visible;
+        padding-top: 0;
+        padding-right: 0;
     }
 
     .models-header {
@@ -544,7 +711,8 @@
         align-items: flex-start;
         justify-content: space-between;
         gap: 12px;
-        margin-bottom: 16px;
+        margin-bottom: 12px;
+        flex: 0 0 auto;
     }
 
     .models-header-copy {
@@ -552,12 +720,22 @@
         min-width: 0;
     }
 
+    .models-stats-grid {
+        flex: 0 0 auto;
+    }
+
     .embedding-card {
         border: 1px solid #e2e8f0;
-        border-radius: 14px;
-        padding: 14px;
-        background: linear-gradient(180deg, #fff, #f8fafc);
+        border-radius: 10px;
+        padding: 8px;
+        margin: 0 8px 8px;
+        background: #f8fafc;
         position: relative;
+        box-shadow: none;
+    }
+
+    .mains-group .embedding-card {
+        margin-top: 10px;
     }
 
     .embedding-topline {
@@ -565,13 +743,15 @@
         align-items: center;
         justify-content: space-between;
         gap: 10px;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
 
     .embedding-name {
         color: #0f172a;
+        font-size: 0.86rem;
         font-weight: 800;
         word-break: break-word;
+        padding-right: 30px;
     }
 
     .embedding-chip {
@@ -596,37 +776,37 @@
 
     .embedding-meta {
         color: #475569;
-        font-size: 0.88rem;
-        line-height: 1.45;
+        font-size: 0.76rem;
+        line-height: 1.35;
     }
 
     .embedding-selector-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 12px;
-        margin-top: 12px;
+        gap: 8px;
+        margin-top: 8px;
     }
 
     .embedding-selector-label-wrap {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
+        gap: 5px;
         min-width: 0;
     }
 
     .embedding-selector-label {
         color: #475569;
-        font-size: 0.82rem;
-        font-weight: 700;
+        font-size: 0.74rem;
+        font-weight: 900;
         line-height: 1.2;
         white-space: nowrap;
         flex: 0 0 auto;
     }
 
     .embedding-help-btn {
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
         border: 1px solid #bfdbfe;
         border-radius: 999px;
         background: rgba(239, 246, 255, 0.95);
@@ -634,7 +814,7 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.72rem;
+        font-size: 0.66rem;
         font-weight: 800;
         cursor: pointer;
         padding: 0;
@@ -657,12 +837,34 @@
         font-size: 0.88rem;
     }
 
+    .embedding-mains-row {
+        margin-top: 8px;
+    }
+
+    .embedding-mains-select {
+        width: 100%;
+        min-height: 32px;
+        border: 1px solid #bfdbfe;
+        border-radius: 9px;
+        padding: 6px 8px;
+        color: #0f172a;
+        background: #f8fafc;
+        font-size: 0.76rem;
+        font-weight: 700;
+    }
+
+    .embedding-mains-select.is-unassigned {
+        border-color: #fbbf24;
+        background: #fffbeb;
+        color: #92400e;
+    }
+
     .embedding-switch {
         position: relative;
         display: inline-flex;
         align-items: center;
-        width: 52px;
-        height: 30px;
+        width: 42px;
+        height: 24px;
     }
 
     .embedding-switch input {
@@ -685,10 +887,10 @@
     .embedding-switch-slider::before {
         content: "";
         position: absolute;
-        width: 22px;
-        height: 22px;
-        left: 4px;
-        top: 4px;
+        width: 18px;
+        height: 18px;
+        left: 3px;
+        top: 3px;
         border-radius: 999px;
         background: #ffffff;
         box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
@@ -700,7 +902,7 @@
     }
 
     .embedding-switch input:checked + .embedding-switch-slider::before {
-        transform: translateX(22px);
+        transform: translateX(18px);
     }
 
     .embedding-switch input:disabled + .embedding-switch-slider {
@@ -716,10 +918,11 @@
     }
 
     .embedding-stats-actions {
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(100px, 1fr);
         align-items: stretch;
-        gap: 10px;
-        margin-top: 12px;
+        gap: 6px;
+        margin-top: 8px;
     }
 
     .embedding-stats-actions .embedding-stat {
@@ -728,23 +931,23 @@
     }
 
     .embedding-entities {
-        margin-top: 12px;
-        padding: 10px 12px;
+        margin-top: 8px;
+        padding: 7px 8px;
         border: 1px solid #dbeafe;
-        border-radius: 12px;
-        background: rgba(239, 246, 255, 0.85);
+        border-radius: 9px;
+        background: #eff6ff;
     }
 
     .embedding-entities-label {
         color: #1e3a8a;
-        font-size: 0.78rem;
-        font-weight: 800;
-        margin-bottom: 6px;
+        font-size: 0.76rem;
+        font-weight: 900;
+        cursor: pointer;
     }
 
     .embedding-entity-name {
         color: #0f172a;
-        font-size: 0.82rem;
+        font-size: 0.74rem;
         line-height: 1.45;
         word-break: break-word;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -759,64 +962,65 @@
     .embedding-preview-btn {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 5px;
         border: 1px solid #bfdbfe;
-        border-radius: 10px;
-        padding: 8px 12px;
+        border-radius: 9px;
+        padding: 7px 8px;
         background: rgba(239, 246, 255, 0.92);
-        color: #1d4ed8;
-        font-size: 0.95rem;
-        font-weight: 700;
+        color: #2563eb;
+        font-size: 0.78rem;
+        font-weight: 900;
         cursor: pointer;
         transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
     }
 
     .embedding-preview-btn:hover {
         transform: translateY(-1px);
-        box-shadow: 0 10px 22px rgba(37, 99, 235, 0.14);
+        box-shadow: none;
         background: #dbeafe;
     }
 
     .embedding-stats-actions .embedding-preview-btn {
-        flex: 0 0 auto;
+        flex: none;
         align-self: stretch;
+        justify-content: center;
         white-space: nowrap;
     }
 
     .embedding-stat {
         border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 10px;
-        background: rgba(248, 250, 252, 0.82);
+        border-radius: 9px;
+        padding: 7px 8px;
+        background: #f8fafc;
     }
 
     .embedding-stat-label {
         color: #64748b;
-        font-size: 0.75rem;
-        margin-bottom: 4px;
+        font-size: 0.68rem;
+        margin-bottom: 3px;
     }
 
     .embedding-stat-value {
         color: #0f172a;
-        font-size: 0.92rem;
-        font-weight: 800;
+        font-size: 0.78rem;
+        font-weight: 900;
     }
 
     .embedding-actions {
         position: absolute;
-        top: 12px;
-        right: 12px;
+        top: 8px;
+        right: 8px;
     }
 
     .embedding-delete-btn {
-        width: 32px;
-        height: 32px;
+        width: 24px;
+        height: 24px;
         border: 1px solid #fecaca;
         border-radius: 999px;
         padding: 0;
         font-weight: 700;
-        color: #b91c1c;
-        background: rgba(255, 241, 242, 0.95);
+        color: #dc2626;
+        background: #fff1f2;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
@@ -827,7 +1031,7 @@
     .embedding-delete-btn:hover {
         background: #ffe4e6;
         transform: translateY(-1px);
-        box-shadow: 0 8px 18px rgba(248, 113, 113, 0.18);
+        box-shadow: none;
     }
 
     .empty-state {
@@ -1063,9 +1267,16 @@
             grid-template-columns: 1fr;
         }
 
+        .models-panel {
+            height: calc(100vh - 72px);
+            max-height: none;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
         .embedding-list {
             max-height: none;
-            overflow-y: visible;
+            overflow: visible;
             padding-right: 0;
         }
     }
@@ -1133,10 +1344,31 @@
             font-size: 0.82rem;
         }
 
+        .mains-group-actions {
+            justify-content: flex-end;
+            flex-wrap: nowrap;
+        }
+
+        .embedding-card {
+            margin-inline: 8px;
+            padding: 10px;
+        }
+
+        .embedding-stats-actions {
+            grid-template-columns: 1fr;
+        }
+
+        .embedding-stats-actions .embedding-preview-btn {
+            min-height: 44px;
+        }
+
         .action-btn {
-            width: 100%;
             min-height: 44px;
             padding: 12px 14px;
+        }
+
+        .control-row .action-btn {
+            width: 100%;
         }
 
         .embedding-topline {
@@ -1264,11 +1496,11 @@
         }
 
         .embedding-card {
-            padding: 10px;
+            padding: 8px;
         }
 
         .embedding-meta {
-            font-size: 0.82rem;
+            font-size: 0.76rem;
         }
 
         .status-message {
@@ -1315,6 +1547,9 @@
                 <div>
                     <label class="field-label" for="mainSensorSelect">Main power sensor</label>
                     <select id="mainSensorSelect" class="field-input"></select>
+                    <div id="mainsEmptyHint" class="mains-empty-hint">
+                        No mains power sensor is configured yet. Click <button id="mainsEmptyHintAddButton" type="button">Add mains sensor</button> to choose a Home Assistant power sensor.
+                    </div>
                 </div>
                 <div>
                     <label class="field-label" for="historyRangeSelect">Range</label>
@@ -1324,6 +1559,9 @@
                         <option value="7">7d</option>
                     </select>
                 </div>
+                <button id="addMainsButton" class="action-btn action-primary" type="button">
+                    <i class="fas fa-plus" aria-hidden="true"></i> Add mains sensor
+                </button>
             </div>
 
             <div class="stats-grid">
@@ -1376,11 +1614,11 @@
             <div id="statusMessage" class="status-message"></div>
         </section>
 
-        <aside class="panel">
+        <aside class="panel models-panel">
             <div class="models-header">
                 <div class="models-header-copy">
                     <h2>Appliance Models</h2>
-                    <p>Appliance models available for NILM disaggregation.</p>
+                    <p id="applianceModelsSummary">Appliance models available for NILM disaggregation.</p>
                 </div>
                 <button id="addApplianceButton" class="action-btn action-primary" type="button"><i class="fas fa-plus" aria-hidden="true"></i> Add</button>
             </div>
@@ -1431,6 +1669,34 @@
         <div class="config-modal-actions">
             <button id="cancelDeleteEmbeddingButton" class="action-btn action-secondary" type="button">Cancel</button>
             <button id="confirmDeleteEmbeddingButton" class="action-btn" style="background:#dc2626;color:#fff;" type="button">Delete</button>
+        </div>
+    </div>
+</div>
+
+<div id="deleteMainsModal" class="config-modal-overlay">
+    <div class="config-modal-card">
+        <div class="config-modal-title">Delete Mains Power Sensor?</div>
+        <div id="deleteMainsModalMessage" class="config-modal-copy">This mains power sensor will be removed from the dashboard.</div>
+        <div class="config-modal-actions">
+            <button id="cancelDeleteMainsButton" class="action-btn action-secondary" type="button">Cancel</button>
+            <button id="confirmDeleteMainsButton" class="action-btn" style="background:#dc2626;color:#fff;" type="button">Delete</button>
+        </div>
+    </div>
+</div>
+
+<div id="mainsConfigModal" class="config-modal-overlay">
+    <div class="config-modal-card">
+        <div id="mainsConfigModalTitle" class="config-modal-title">Add Mains Power Sensor</div>
+        <div class="config-modal-copy">
+            <label class="field-label" for="mainsConfigSensorSelect">Home Assistant power sensor</label>
+            <select id="mainsConfigSensorSelect" class="field-input" required></select>
+            <label class="field-label mt-3" for="mainsConfigLabelInput">Display name</label>
+            <input id="mainsConfigLabelInput" class="field-input" type="text" autocomplete="off" required placeholder="Enter a display name">
+            <div id="mainsConfigStatus" class="mains-form-status"></div>
+        </div>
+        <div class="config-modal-actions">
+            <button id="cancelMainsConfigButton" class="action-btn action-secondary" type="button">Cancel</button>
+            <button id="confirmMainsConfigButton" class="action-btn action-primary" type="button">Add</button>
         </div>
     </div>
 </div>
@@ -1508,7 +1774,18 @@
 
 <script>
     let mainSensorSelect;
+    let mainsEmptyHint;
+    let mainsEmptyHintAddButton;
     let historyRangeSelect;
+    let addMainsButton;
+    let applianceModelsSummary;
+    let mainsConfigModal;
+    let mainsConfigModalTitle;
+    let mainsConfigSensorSelect;
+    let mainsConfigLabelInput;
+    let mainsConfigStatus;
+    let confirmMainsConfigButton;
+    let cancelMainsConfigButton;
     let statusMessage;
     let mainsSignalChartShell;
     let addApplianceButton;
@@ -1536,6 +1813,10 @@
     let deleteEmbeddingModalMessage;
     let confirmDeleteEmbeddingButton;
     let cancelDeleteEmbeddingButton;
+    let deleteMainsModal;
+    let deleteMainsModalMessage;
+    let confirmDeleteMainsButton;
+    let cancelDeleteMainsButton;
     let realtimeHelpModal;
     let closeRealtimeHelpButton;
     let baseLoadHelpModal;
@@ -1563,6 +1844,9 @@
     let predictionOverlaySensors = [];
     let activeInlinePredictions = [];
     let currentEmbeddings = [];
+    let currentMains = [];
+    let currentApplianceMains = {};
+    let pendingMainsEditSensorId = null;
     let currentPreviewModelName = null;
     let currentPreviewBasePowerSeries = [];
     let currentPreviewStateSeries = [];
@@ -1584,6 +1868,11 @@
     let dashboardPendingJobsSignature = "";
 
     let addApplianceButtonHandler;
+    let addMainsButtonHandler;
+    let mainsEmptyHintAddButtonHandler;
+    let confirmMainsConfigHandler;
+    let cancelMainsConfigHandler;
+    let mainsConfigOverlayHandler;
     let previewAllEmbeddingsHandler;
     let sensorChangeHandler;
     let rangeChangeHandler;
@@ -1591,6 +1880,9 @@
     let embeddingsListChangeHandler;
     let confirmDeleteEmbeddingHandler;
     let cancelDeleteEmbeddingHandler;
+    let confirmDeleteMainsHandler;
+    let cancelDeleteMainsHandler;
+    let deleteMainsOverlayHandler;
     let closeRealtimeHelpHandler;
     let realtimeHelpOverlayHandler;
     let closeBaseLoadHelpHandler;
@@ -1606,6 +1898,7 @@
     let dashboardTrainingJobsPopupCloseHandler;
     let messageTimeoutId;
     let pendingDeleteEmbeddingName = null;
+    let pendingDeleteMainsSensorId = null;
 
     const PREVIEW_OVERLAY_COLORS = [
         "#f97316",
@@ -2012,6 +2305,22 @@
         if (deleteEmbeddingModal) deleteEmbeddingModal.classList.remove("active");
     }
 
+    function openDeleteMainsModal(sensorId) {
+        const mains = currentMains.find((item) => item.sensor_id === sensorId);
+        if (!mains) return;
+        pendingDeleteMainsSensorId = sensorId;
+        const assignedCount = currentEmbeddings.filter((embedding) => modelAssignedMainsId(embedding) === sensorId).length;
+        if (deleteMainsModalMessage) {
+            deleteMainsModalMessage.textContent = `Delete mains power sensor "${mainsLabel(mains)}"? ${assignedCount} trained ${assignedCount === 1 ? "model is" : "models are"} assigned to it and will be marked unassigned. Trained model files will not be deleted.`;
+        }
+        if (deleteMainsModal) deleteMainsModal.classList.add("active");
+    }
+
+    function closeDeleteMainsModal() {
+        pendingDeleteMainsSensorId = null;
+        if (deleteMainsModal) deleteMainsModal.classList.remove("active");
+    }
+
     function openRealtimeHelpModal() {
         if (realtimeHelpModal) realtimeHelpModal.classList.add("active");
     }
@@ -2103,12 +2412,13 @@
     }
 
     function syncDisaggregationButtons() {
+        const visibleCount = currentEmbeddings.filter((embedding) => embedding?.source === "trained" && modelBelongsToSelectedView(embedding) && modelAssignedMainsId(embedding)).length;
         if (previewAllEmbeddingsButton) {
-            previewAllEmbeddingsButton.disabled = isDisaggregationRunning || !currentEmbeddings.length;
+            previewAllEmbeddingsButton.disabled = isDisaggregationRunning || visibleCount === 0;
         }
         if (embeddingsList) {
             embeddingsList.querySelectorAll("[data-embedding-preview]").forEach((button) => {
-                button.disabled = isDisaggregationRunning;
+                button.disabled = isDisaggregationRunning || button.getAttribute("data-embedding-assigned") !== "true";
             });
         }
     }
@@ -2352,8 +2662,16 @@
         }
 
         const mainsEnergyWh = computeSeriesEnergyWh(fullSignalSeries);
-        const baseloadSource = activeInlinePredictions.find((prediction) => Array.isArray(prediction.baseloadSeries) && prediction.baseloadSeries.length);
-        const baseloadEnergyWh = baseloadSource ? computeSeriesEnergyWh(baseloadSource.baseloadSeries) : 0;
+        const baseloadByMains = new Map();
+        activeInlinePredictions.forEach((prediction) => {
+            if (!Array.isArray(prediction.baseloadSeries) || !prediction.baseloadSeries.length) return;
+            const mainsId = prediction.mainSensorId || prediction.mainsSensorId || modelAssignedMainsIdByKey(prediction.modelKey) || prediction.modelKey;
+            if (!baseloadByMains.has(mainsId)) {
+                baseloadByMains.set(mainsId, prediction.baseloadSeries);
+            }
+        });
+        const baseloadEnergyWh = Array.from(baseloadByMains.values())
+            .reduce((sum, series) => sum + computeSeriesEnergyWh(series), 0);
         const applianceItems = activeInlinePredictions.map((prediction) => {
             const energyWh = computeSeriesEnergyWh(prediction.powerSeries);
             const sharePct = mainsEnergyWh > 1e-9 ? (energyWh / mainsEnergyWh) * 100 : 0;
@@ -2975,6 +3293,14 @@
         showChartLoading("Preparing prediction...");
 
         try {
+            const embedding = currentEmbeddings.find((item) => item?.model_key === modelKey);
+            const modelMainsId = modelAssignedMainsId(embedding);
+            if (!modelMainsId) {
+                throw new Error("This appliance model is not assigned to a mains power sensor.");
+            }
+            const mainsPoints = selectedMainsValue() === modelMainsId
+                ? fullSignalSeries
+                : await fetchSeriesForSensor(modelMainsId, { startUtc, endUtc });
             const previewUrl = `embeddings/${encodeURIComponent(modelKey)}/preview`;
             const response = await fetch(previewUrl, {
                 method: "POST",
@@ -2982,7 +3308,8 @@
                 body: JSON.stringify({
                     start: startUtc.toISOString(),
                     end: endUtc.toISOString(),
-                    mains_points: fullSignalSeries,
+                    main_sensor_id: modelMainsId,
+                    mains_points: mainsPoints,
                 }),
             });
             if (!response.ok) {
@@ -3000,7 +3327,15 @@
 
             const payload = await waitForPredictionPreviewJob(startPayload.job_id, {
                 onChunk(chunkPayload) {
-                    mergePredictionChunk(chunkPayload);
+                    const chunkPredictions = Array.isArray(chunkPayload?.predictions) ? chunkPayload.predictions : [];
+                    mergePredictionChunk({
+                        ...chunkPayload,
+                        predictions: chunkPredictions.map((prediction) => ({
+                            ...prediction,
+                            main_sensor_id: prediction.main_sensor_id || prediction.mains_sensor_id || modelMainsId,
+                            mains_sensor_id: prediction.mains_sensor_id || prediction.main_sensor_id || modelMainsId,
+                        })),
+                    });
                 },
             });
             const powerSeries = Array.isArray(payload.power_series) ? payload.power_series : [];
@@ -3023,6 +3358,8 @@
             const inlinePrediction = {
                 modelKey,
                 modelName,
+                mainSensorId: modelMainsId,
+                mainsSensorId: modelMainsId,
                 powerSeries,
                 baseloadSeries,
                 stateSeries,
@@ -3100,10 +3437,13 @@
             const powerSeries = Array.isArray(prediction.power_series) ? prediction.power_series : [];
             const baseloadSeries = Array.isArray(prediction.baseload_series) ? prediction.baseload_series : [];
             const stateSeries = Array.isArray(prediction.state_series) ? prediction.state_series : [];
+            const mainSensorId = prediction.main_sensor_id || prediction.mains_sensor_id || modelAssignedMainsIdByKey(modelKey);
             if (!powerSeries.length && !stateSeries.length) return;
 
             const existing = activeInlinePredictions.find((item) => item.modelKey === modelKey);
             if (existing) {
+                existing.mainSensorId = existing.mainSensorId || mainSensorId || null;
+                existing.mainsSensorId = existing.mainsSensorId || mainSensorId || null;
                 appendSeriesPoints(existing.powerSeries, powerSeries);
                 appendSeriesPoints(existing.baseloadSeries, baseloadSeries);
                 appendSeriesPoints(existing.stateSeries, stateSeries);
@@ -3112,6 +3452,8 @@
                 activeInlinePredictions.push({
                     modelKey,
                     modelName: prediction.model_name || modelKey,
+                    mainSensorId: mainSensorId || null,
+                    mainsSensorId: mainSensorId || null,
                     powerSeries: powerSeries.slice(),
                     baseloadSeries: baseloadSeries.slice(),
                     stateSeries: stateSeries.slice(),
@@ -3135,40 +3477,66 @@
         showChartLoading("Preparing predictions...");
 
         try {
-            const response = await fetch("embeddings/preview-all", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    start: startUtc.toISOString(),
-                    end: endUtc.toISOString(),
-                    mains_points: fullSignalSeries,
-                }),
-            });
-            if (!response.ok) {
-                const errorPayload = await response.json().catch(() => ({}));
-                throw new Error(errorPayload.message || `Failed to load predictions: HTTP ${response.status}`);
-            }
-
-            const startPayload = await response.json().catch(() => ({}));
-            if (!startPayload.job_id) {
-                throw new Error("Prediction preview job did not start correctly.");
-            }
-
             activeInlinePredictions = [];
             renderInlinePredictionUi();
             renderSignalChart(fullSignalSeries);
 
             let streamedPredictionChunks = 0;
-            const payload = await waitForPredictionPreviewJob(startPayload.job_id, {
-                onChunk(chunkPayload) {
-                    const merged = mergePredictionChunk(chunkPayload);
-                    streamedPredictionChunks += merged;
-                },
-            });
-            const predictions = Array.isArray(payload.predictions) ? payload.predictions : [];
-            if (predictions.length) {
-                activeInlinePredictions = [];
-                mergePredictionChunk({ predictions });
+            const selected = selectedMainsValue();
+            const groups = selected === "__all__"
+                ? currentMains
+                : currentMains.filter((mains) => mains.sensor_id === selected);
+
+            for (const mains of groups) {
+                const groupModels = currentEmbeddings.filter((embedding) => modelBelongsToSelectedView(embedding) && modelAssignedMainsId(embedding) === mains.sensor_id);
+                if (!groupModels.length) continue;
+                const mainsPoints = selected === mains.sensor_id
+                    ? fullSignalSeries
+                    : await fetchSeriesForSensor(mains.sensor_id, { startUtc, endUtc });
+                const response = await fetch("embeddings/preview-all", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        start: startUtc.toISOString(),
+                        end: endUtc.toISOString(),
+                        main_sensor_id: mains.sensor_id,
+                        mains_points: mainsPoints,
+                    }),
+                });
+                if (!response.ok) {
+                    const errorPayload = await response.json().catch(() => ({}));
+                    throw new Error(errorPayload.message || `Failed to load predictions: HTTP ${response.status}`);
+                }
+
+                const startPayload = await response.json().catch(() => ({}));
+                if (!startPayload.job_id) {
+                    throw new Error("Prediction preview job did not start correctly.");
+                }
+
+                const payload = await waitForPredictionPreviewJob(startPayload.job_id, {
+                    onChunk(chunkPayload) {
+                        const chunkPredictions = Array.isArray(chunkPayload?.predictions) ? chunkPayload.predictions : [];
+                        const merged = mergePredictionChunk({
+                            ...chunkPayload,
+                            predictions: chunkPredictions.map((prediction) => ({
+                                ...prediction,
+                                main_sensor_id: prediction.main_sensor_id || prediction.mains_sensor_id || mains.sensor_id,
+                                mains_sensor_id: prediction.mains_sensor_id || prediction.main_sensor_id || mains.sensor_id,
+                            })),
+                        });
+                        streamedPredictionChunks += merged;
+                    },
+                });
+                const predictions = Array.isArray(payload.predictions) ? payload.predictions : [];
+                if (predictions.length) {
+                    mergePredictionChunk({
+                        predictions: predictions.map((prediction) => ({
+                            ...prediction,
+                            main_sensor_id: prediction.main_sensor_id || prediction.mains_sensor_id || mains.sensor_id,
+                            mains_sensor_id: prediction.mains_sensor_id || prediction.main_sensor_id || mains.sensor_id,
+                        })),
+                    });
+                }
             }
 
             if (!activeInlinePredictions.length) {
@@ -3269,6 +3637,15 @@
 
     function updateLatestPowerFromSensors() {
         if (!latestPowerStat || !mainSensorSelect?.value) return;
+        if (mainSensorSelect.value === "__all__") {
+            const total = currentMains.reduce((sum, mains) => {
+                const sensor = sensorsById.get(mains.sensor_id);
+                const liveValue = clampDashboardDisplayPower(normalizeDashboardPowerValue(sensor?.state, sensor));
+                return sum + (Number.isFinite(liveValue) ? liveValue : 0);
+            }, 0);
+            latestPowerStat.textContent = formatPower(total);
+            return;
+        }
         const sensor = sensorsById.get(mainSensorSelect.value);
         const liveValue = clampDashboardDisplayPower(normalizeDashboardPowerValue(sensor?.state, sensor));
         if (Number.isFinite(liveValue)) {
@@ -3670,6 +4047,129 @@
         updateSignalChartData();
     }
 
+    function selectedMainsValue() {
+        return mainSensorSelect?.value || "";
+    }
+
+    function primaryMainsId() {
+        return currentMains[0]?.sensor_id || "";
+    }
+
+    function mainsLabel(mains) {
+        return mains?.label || mains?.sensor_id || "Mains";
+    }
+
+    function modelAssignedMainsId(embedding) {
+        if (embedding?.mains_assignment_explicit) {
+            return embedding.mains_sensor_id === null ? null : (embedding.mains_sensor_id || null);
+        }
+        return embedding?.mains_sensor_id || primaryMainsId() || null;
+    }
+
+    function modelAssignedMainsIdByKey(modelKey) {
+        return modelAssignedMainsId(currentEmbeddings.find((embedding) => embedding?.model_key === modelKey));
+    }
+
+    function modelBelongsToSelectedView(embedding) {
+        const selected = selectedMainsValue();
+        const assigned = modelAssignedMainsId(embedding);
+        if (selected === "__all__") return true;
+        return assigned === selected;
+    }
+
+    function renderEmbeddingCard(embedding) {
+        const card = document.createElement("div");
+        card.className = "embedding-card";
+
+        const metadata = embedding.metadata || {};
+        const supervisionMode = String(metadata.supervision_mode || "").toLowerCase();
+        const supervisionLabel = supervisionMode === "sensor"
+            ? "Power sensor"
+            : (supervisionMode === "intervals" ? "ON intervals" : "Unknown");
+        const publishOnline = Boolean(metadata.publish_online);
+        const realtimeEntities = realtimeEntityIdsForModel(embedding);
+        const assignedMainsId = modelAssignedMainsId(embedding);
+        const assigned = Boolean(assignedMainsId);
+        const mainsAssignmentOptions = currentMains.map((mains) => `
+            <option value="${escapeDashboardTrainingHtml(mains.sensor_id)}">
+                ${escapeDashboardTrainingHtml(mainsLabel(mains))}
+            </option>
+        `).join("");
+        const assignmentMarkup = assigned ? "" : `
+            <div class="embedding-mains-row">
+                <label class="embedding-selector-label" for="embeddingMains_${escapeDashboardTrainingHtml(embedding.model_key)}">Mains</label>
+                <select id="embeddingMains_${escapeDashboardTrainingHtml(embedding.model_key)}" class="embedding-mains-select is-unassigned" data-embedding-mains="${escapeDashboardTrainingHtml(embedding.model_key)}" ${currentMains.length ? "" : "disabled"}>
+                    <option value="" selected>${currentMains.length ? "Assign to mains power sensor..." : "No mains power sensors configured"}</option>
+                    ${mainsAssignmentOptions}
+                </select>
+            </div>
+        `;
+        const liveOutputMarkup = embedding.bundle_mode === "online"
+            ? `
+                <div class="embedding-selector-row">
+                    <div class="embedding-selector-label-wrap">
+                        <div class="embedding-selector-label">Publish Real Time</div>
+                        <button class="embedding-help-btn" type="button" data-realtime-help="true" aria-label="What does Publish Real Time mean?">?</button>
+                    </div>
+                    <label class="embedding-switch" title="${publishOnline ? "Publishing in real time to Home Assistant" : "Not publishing in real time to Home Assistant"}">
+                        <input type="checkbox" data-embedding-online="${escapeDashboardTrainingHtml(embedding.model_key)}" ${publishOnline ? "checked" : ""} ${assigned ? "" : "disabled"}>
+                        <span class="embedding-switch-slider" aria-hidden="true"></span>
+                    </label>
+                </div>
+            `
+            : `
+                <div class="embedding-selector-row">
+                    <div class="embedding-selector-label-wrap">
+                        <div class="embedding-selector-label">Publish Real Time</div>
+                        <button class="embedding-help-btn" type="button" data-realtime-help="true" aria-label="What does Publish Real Time mean?">?</button>
+                    </div>
+                    <div class="stat-label">Offline only</div>
+                </div>
+            `;
+        const realtimeEntitiesMarkup = (embedding.bundle_mode === "online" && publishOnline && assigned)
+            ? `
+                <details class="embedding-entities">
+                    <summary class="embedding-entities-label">Home Assistant Entities</summary>
+                    <div class="embedding-entity-name">${realtimeEntities.power}</div>
+                    <div class="embedding-entity-name">${realtimeEntities.energy}</div>
+                    <div class="embedding-entity-name">${realtimeEntities.state}</div>
+                </details>
+            `
+            : "";
+
+        card.innerHTML = `
+            <div class="embedding-topline">
+                <div>
+                    <div class="embedding-name">${embedding.name}</div>
+                </div>
+            </div>
+            <div class="embedding-meta">
+                Updated: <strong>${formatTimestamp(embedding.updated_at)}</strong>
+            </div>
+            ${assignmentMarkup}
+            ${liveOutputMarkup}
+            ${realtimeEntitiesMarkup}
+            <div class="embedding-stats-actions">
+                <div class="embedding-stat">
+                    <div class="embedding-stat-label">Supervision</div>
+                    <div class="embedding-stat-value">${escapeDashboardTrainingHtml(supervisionLabel)}</div>
+                </div>
+                <button class="embedding-preview-btn" type="button" data-embedding-preview="${escapeDashboardTrainingHtml(embedding.model_key)}" data-embedding-label="${escapeDashboardTrainingHtml(embedding.name)}" data-embedding-assigned="${assigned ? "true" : "false"}" ${isDisaggregationRunning || !assigned ? "disabled" : ""}>
+                    <i class="fas fa-chart-line" aria-hidden="true"></i>
+                    Disaggregate
+                </button>
+            </div>
+            ${embedding.deletable ? `
+                <div class="embedding-actions">
+                    <button class="embedding-delete-btn" type="button" data-embedding-delete="${escapeDashboardTrainingHtml(embedding.model_key)}" data-embedding-label="${escapeDashboardTrainingHtml(embedding.name)}" title="Delete appliance model" aria-label="Delete appliance model">
+                        <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                    </button>
+                </div>
+            ` : ``}
+        `;
+        return card;
+    }
+
     function renderEmbeddings(embeddings) {
         embeddingsList.innerHTML = "";
         currentEmbeddings = Array.isArray(embeddings) ? embeddings : [];
@@ -3693,94 +4193,75 @@
                 return bTime - aTime;
             });
 
-        embeddingsCountStat.textContent = String(safeEmbeddings.length);
-        if (previewAllEmbeddingsButton) previewAllEmbeddingsButton.disabled = isDisaggregationRunning || safeEmbeddings.length === 0;
+        const visibleEmbeddings = safeEmbeddings.filter(modelBelongsToSelectedView);
+        const unassignedModels = safeEmbeddings.filter((embedding) => !modelAssignedMainsId(embedding));
+        const visibleAssignedEmbeddings = visibleEmbeddings.filter((embedding) => modelAssignedMainsId(embedding));
+        embeddingsCountStat.textContent = String(visibleAssignedEmbeddings.length);
+        if (previewAllEmbeddingsButton) previewAllEmbeddingsButton.disabled = isDisaggregationRunning || visibleAssignedEmbeddings.length === 0;
 
-        if (!safeEmbeddings.length) {
+        const selected = selectedMainsValue();
+        const groups = selected === "__all__"
+            ? currentMains
+            : currentMains.filter((mains) => mains.sensor_id === selected);
+
+        groups.forEach((mains) => {
+            const groupModels = visibleEmbeddings.filter((embedding) => modelAssignedMainsId(embedding) === mains.sensor_id);
+            const group = document.createElement("div");
+            group.className = "mains-group";
+            group.innerHTML = `
+                <div class="mains-group-header">
+                    <div class="mains-group-identity">
+                        <div class="mains-group-icon">
+                            <i class="fas fa-bolt" aria-hidden="true"></i>
+                        </div>
+                        <div>
+                            <div class="mains-group-title">${escapeDashboardTrainingHtml(mainsLabel(mains))}</div>
+                            <div class="mains-group-meta">${escapeDashboardTrainingHtml(mains.sensor_id)}</div>
+                        </div>
+                    </div>
+                    <div class="mains-group-actions">
+                        <button class="mains-icon-btn" type="button" title="Edit mains power sensor" aria-label="Edit mains power sensor" data-mains-edit="${mains.sensor_id}">
+                            <i class="fas fa-pen" aria-hidden="true"></i>
+                        </button>
+                        <button class="mains-icon-btn mains-icon-btn-danger" type="button" title="Delete mains power sensor" aria-label="Delete mains power sensor" data-mains-delete="${mains.sensor_id}">
+                            <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            groupModels.forEach((embedding) => group.appendChild(renderEmbeddingCard(embedding)));
+            embeddingsList.appendChild(group);
+        });
+
+        if (unassignedModels.length) {
+            const group = document.createElement("div");
+            group.className = "mains-group mains-group-unassigned";
+            group.innerHTML = `
+                <div class="mains-group-header">
+                    <div class="mains-group-identity">
+                        <div class="mains-group-icon">
+                            <i class="fas fa-exclamation" aria-hidden="true"></i>
+                        </div>
+                        <div>
+                            <div class="mains-group-title">Unassigned models</div>
+                            <div class="mains-group-meta">Choose a mains power sensor on each model</div>
+                        </div>
+                    </div>
+                    <div class="mains-group-actions">
+                    </div>
+                </div>
+            `;
+            unassignedModels.forEach((embedding) => group.appendChild(renderEmbeddingCard(embedding)));
+            embeddingsList.appendChild(group);
+        }
+
+        if (!groups.length && !unassignedModels.length) {
             embeddingsList.innerHTML = `
                 <div class="empty-state">
                     No appliance models found yet. Train an appliance from the Training Interface and it will appear here.
                 </div>
             `;
-            return;
         }
-
-        safeEmbeddings.forEach((embedding) => {
-            const card = document.createElement("div");
-            card.className = "embedding-card";
-
-            const metadata = embedding.metadata || {};
-            const supervisionMode = String(metadata.supervision_mode || "").toLowerCase();
-            const supervisionLabel = supervisionMode === "sensor"
-                ? "Power sensor"
-                : (supervisionMode === "intervals" ? "ON intervals" : "Unknown");
-            const publishOnline = Boolean(metadata.publish_online);
-            const realtimeEntities = realtimeEntityIdsForModel(embedding);
-            const liveOutputMarkup = embedding.bundle_mode === "online"
-                ? `
-                    <div class="embedding-selector-row">
-                        <div class="embedding-selector-label-wrap">
-                            <div class="embedding-selector-label">Publish Real Time</div>
-                            <button class="embedding-help-btn" type="button" data-realtime-help="true" aria-label="What does Publish Real Time mean?">?</button>
-                        </div>
-                        <label class="embedding-switch" title="${publishOnline ? "Publishing in real time to Home Assistant" : "Not publishing in real time to Home Assistant"}">
-                            <input type="checkbox" data-embedding-online="${embedding.model_key}" ${publishOnline ? "checked" : ""}>
-                            <span class="embedding-switch-slider" aria-hidden="true"></span>
-                        </label>
-                    </div>
-                `
-                : `
-                    <div class="embedding-selector-row">
-                        <div class="embedding-selector-label-wrap">
-                            <div class="embedding-selector-label">Publish Real Time</div>
-                            <button class="embedding-help-btn" type="button" data-realtime-help="true" aria-label="What does Publish Real Time mean?">?</button>
-                        </div>
-                        <div class="stat-label">Offline only</div>
-                    </div>
-                `;
-            const realtimeEntitiesMarkup = (embedding.bundle_mode === "online" && publishOnline)
-                ? `
-                    <div class="embedding-entities">
-                        <div class="embedding-entities-label">Home Assistant Entities</div>
-                        <div class="embedding-entity-name">${realtimeEntities.power}</div>
-                        <div class="embedding-entity-name">${realtimeEntities.energy}</div>
-                        <div class="embedding-entity-name">${realtimeEntities.state}</div>
-                    </div>
-                `
-                : "";
-
-            card.innerHTML = `
-                <div class="embedding-topline">
-                    <div>
-                        <div class="embedding-name">${embedding.name}</div>
-                    </div>
-                </div>
-                <div class="embedding-meta">
-                    Updated: <strong>${formatTimestamp(embedding.updated_at)}</strong>
-                </div>
-                ${liveOutputMarkup}
-                <div class="embedding-stats-actions">
-                    <div class="embedding-stat">
-                        <div class="embedding-stat-label">Supervision</div>
-                        <div class="embedding-stat-value">${escapeDashboardTrainingHtml(supervisionLabel)}</div>
-                    </div>
-                    <button class="embedding-preview-btn" type="button" data-embedding-preview="${embedding.model_key}" data-embedding-label="${embedding.name}" ${isDisaggregationRunning ? "disabled" : ""}>
-                        <i class="fas fa-chart-line" aria-hidden="true"></i>
-                        Disaggregate
-                    </button>
-                </div>
-                ${realtimeEntitiesMarkup}
-                ${embedding.deletable ? `
-                    <div class="embedding-actions">
-                        <button class="embedding-delete-btn" type="button" data-embedding-delete="${embedding.model_key}" data-embedding-label="${embedding.name}" title="Delete appliance model" aria-label="Delete appliance model">
-                            <i class="fas fa-trash-alt" aria-hidden="true"></i>
-                        </button>
-                    </div>
-                ` : ``}
-            `;
-
-            embeddingsList.appendChild(card);
-        });
     }
 
     async function deleteEmbedding(modelKey) {
@@ -3821,43 +4302,77 @@
         );
     }
 
+    async function updateEmbeddingMainsAssignment(modelKey, mainsSensorId) {
+        let response = await fetch(`embeddings/${encodeURIComponent(modelKey)}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ main_sensor_id: mainsSensorId || null }),
+        });
+        if (response.status === 405) {
+            response = await fetch(`embeddings/${encodeURIComponent(modelKey)}?action=update`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ main_sensor_id: mainsSensorId || null }),
+            });
+        }
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload.message || `Failed to assign appliance model: HTTP ${response.status}`);
+        }
+
+        await fetchConfig();
+        await fetchEmbeddings();
+        showMessage(
+            mainsSensorId
+                ? "Appliance model assigned to mains power sensor."
+                : "Appliance model marked unassigned.",
+            "success"
+        );
+    }
+
     async function fetchSensorsAndPopulateSelect(selectedSensorId) {
         const allSensors = await fetchSensors();
         allSensorsById = new Map(allSensors.map((sensor) => [sensor.entity_id, sensor]));
         const sensors = allSensors.filter((sensor) => isDashboardPowerSensor(sensor));
         sensorsById = new Map(sensors.map((sensor) => [sensor.entity_id, sensor]));
-        mainSensorSelect.innerHTML = "";
-
-        if (!Array.isArray(sensors) || sensors.length === 0) {
-            mainSensorSelect.innerHTML = `<option value="">No power sensors found</option>`;
-            mainSensorSelect.disabled = true;
-            return;
-        }
-
-        mainSensorSelect.disabled = false;
-        const placeholderOption = document.createElement("option");
-        placeholderOption.value = "";
-        placeholderOption.textContent = "Select a mains sensor";
-        mainSensorSelect.appendChild(placeholderOption);
-
-        sensors.forEach((sensor) => {
-            const option = document.createElement("option");
-            option.value = sensor.entity_id;
-            option.textContent = sensor.friendly_name || sensor.entity_id;
-            mainSensorSelect.appendChild(option);
-        });
-
-        if (selectedSensorId && sensors.some(sensor => sensor.entity_id === selectedSensorId)) {
-            mainSensorSelect.value = selectedSensorId;
-        } else {
-            mainSensorSelect.value = "";
-        }
-
+        populateMainsSelect(selectedSensorId);
         updateLatestPowerFromSensors();
     }
 
+    function populateMainsSelect(selectedSensorId) {
+        mainSensorSelect.innerHTML = "";
+
+        if (!Array.isArray(currentMains) || currentMains.length === 0) {
+            mainSensorSelect.innerHTML = `<option value="">No mains power sensors configured</option>`;
+            mainSensorSelect.disabled = true;
+            if (mainsEmptyHint) mainsEmptyHint.classList.add("active");
+            return;
+        }
+
+        if (mainsEmptyHint) mainsEmptyHint.classList.remove("active");
+        mainSensorSelect.disabled = false;
+        currentMains.forEach((mains) => {
+            const option = document.createElement("option");
+            option.value = mains.sensor_id;
+            option.textContent = mainsLabel(mains);
+            mainSensorSelect.appendChild(option);
+        });
+        if (currentMains.length > 1) {
+            const aggregateOption = document.createElement("option");
+            aggregateOption.value = "__all__";
+            aggregateOption.textContent = "Aggregated (all mains)";
+            mainSensorSelect.appendChild(aggregateOption);
+        }
+
+        if ((selectedSensorId === "__all__" && currentMains.length > 1) || currentMains.some((mains) => mains.sensor_id === selectedSensorId)) {
+            mainSensorSelect.value = selectedSensorId;
+        } else {
+            mainSensorSelect.value = currentMains[0]?.sensor_id || "";
+        }
+    }
+
     async function refreshLatestPowerStat() {
-        if (!mainSensorSelect?.value) return;
+        if (!mainSensorSelect?.value || mainSensorSelect.value === "__all__") return;
         try {
             const allSensors = await fetchSensors();
             allSensorsById = new Map(allSensors.map((sensor) => [sensor.entity_id, sensor]));
@@ -3880,6 +4395,21 @@
 
     function buildHistoryUrl() {
         return buildHistoryUrlForSensor(mainSensorSelect.value || "");
+    }
+
+    function alignAndSumSeries(seriesList) {
+        const validSeries = (seriesList || []).filter((series) => Array.isArray(series) && series.length);
+        if (!validSeries.length) return [];
+        const reference = validSeries[0];
+        return reference.map((point) => {
+            const x = Number(point?.x);
+            if (!Number.isFinite(x)) return null;
+            const y = validSeries.reduce((sum, series) => {
+                const value = getInterpolatedSeriesValueAtTimestamp(series, x);
+                return sum + (Number.isFinite(value) ? Math.max(0, value) : 0);
+            }, 0);
+            return { x, y };
+        }).filter(Boolean);
     }
 
     async function fetchSeriesForSensor(sensorEntityId, bounds = null) {
@@ -3906,21 +4436,26 @@
 
         showChartLoading();
         try {
-            const response = await fetch(buildHistoryUrl());
-            if (!response.ok) {
-                throw new Error(`Failed to load history: HTTP ${response.status}`);
-            }
-
-            const payload = await response.json();
-            const rawSeries = Array.isArray(payload) && Array.isArray(payload[0]) ? payload[0] : [];
-            const sensorMeta = allSensorsById.get(mainSensorSelect.value);
-            const normalizedRawSeries = normalizeDashboardSeries(rawSeries, sensorMeta);
             const { startUtc, endUtc } = getSelectedRangeBounds();
-            fullSignalSeries = buildDashboardDisplaySeries(
-                normalizedRawSeries,
-                startUtc.getTime(),
-                endUtc.getTime()
-            );
+            if (mainSensorSelect.value === "__all__") {
+                const histories = await Promise.all(currentMains.map((mains) => fetchSeriesForSensor(mains.sensor_id)));
+                fullSignalSeries = alignAndSumSeries(histories.map((series) => buildDashboardDisplaySeries(series, startUtc.getTime(), endUtc.getTime())));
+            } else {
+                const response = await fetch(buildHistoryUrl());
+                if (!response.ok) {
+                    throw new Error(`Failed to load history: HTTP ${response.status}`);
+                }
+
+                const payload = await response.json();
+                const rawSeries = Array.isArray(payload) && Array.isArray(payload[0]) ? payload[0] : [];
+                const sensorMeta = allSensorsById.get(mainSensorSelect.value);
+                const normalizedRawSeries = normalizeDashboardSeries(rawSeries, sensorMeta);
+                fullSignalSeries = buildDashboardDisplaySeries(
+                    normalizedRawSeries,
+                    startUtc.getTime(),
+                    endUtc.getTime()
+                );
+            }
 
             setStatsFromSeries(fullSignalSeries);
             updateLatestPowerFromSensors();
@@ -3949,16 +4484,24 @@
         }
 
         const config = await response.json();
-        await fetchSensorsAndPopulateSelect(config.main_sensor_id);
+        currentMains = Array.isArray(config.mains) ? config.mains : [];
+        currentApplianceMains = (config.appliance_mains && typeof config.appliance_mains === "object") ? config.appliance_mains : {};
+        await fetchSensorsAndPopulateSelect(mainSensorSelect?.value || config.main_sensor_id || currentMains[0]?.sensor_id || "__all__");
     }
 
     async function saveConfig() {
+        const selected = mainSensorSelect?.value;
         const configPayload = {};
-        if (mainSensorSelect?.value) {
-            configPayload.main_sensor_id = mainSensorSelect.value;
-            const sensorMeta = allSensorsById.get(mainSensorSelect.value);
-            configPayload.main_sensor_unit = sensorMeta?.unit_of_measurement || null;
+        if (selected && selected !== "__all__") {
+            const selectedIndex = currentMains.findIndex((mains) => mains.sensor_id === selected);
+            if (selectedIndex > 0) {
+                currentMains = [currentMains[selectedIndex], ...currentMains.filter((_, index) => index !== selectedIndex)];
+            }
+            const sensorMeta = allSensorsById.get(selected);
+            currentMains = currentMains.map((mains, index) => index === 0 ? { ...mains, unit: sensorMeta?.unit_of_measurement || mains.unit || null } : mains);
         }
+        configPayload.mains = currentMains;
+        configPayload.appliance_mains = currentApplianceMains;
 
         const response = await fetch("config", {
             method: "POST",
@@ -3973,7 +4516,142 @@
             throw new Error(errorText || `HTTP ${response.status}`);
         }
 
-        showMessage("Main sensor saved successfully.", "success");
+        showMessage("Mains configuration saved successfully.", "success");
+    }
+
+    function openMainsConfigModal(sensorId = null) {
+        pendingMainsEditSensorId = sensorId || null;
+        const editing = Boolean(pendingMainsEditSensorId);
+        const current = currentMains.find((mains) => mains.sensor_id === pendingMainsEditSensorId) || null;
+        if (mainsConfigModalTitle) mainsConfigModalTitle.textContent = editing ? "Edit Mains Power Sensor" : "Add Mains Power Sensor";
+        if (confirmMainsConfigButton) confirmMainsConfigButton.textContent = editing ? "Save" : "Add";
+        if (mainsConfigLabelInput) mainsConfigLabelInput.value = current?.label || "";
+        populateMainsConfigSensorOptions(pendingMainsEditSensorId);
+        if (mainsConfigSensorSelect) mainsConfigSensorSelect.value = current?.sensor_id || "";
+        if (mainsConfigModal) mainsConfigModal.classList.add("active");
+    }
+
+    function closeMainsConfigModal() {
+        pendingMainsEditSensorId = null;
+        if (mainsConfigModal) mainsConfigModal.classList.remove("active");
+    }
+
+    function populateMainsConfigSensorOptions(allowSensorId = null) {
+        if (!mainsConfigSensorSelect || !mainsConfigStatus || !confirmMainsConfigButton) return;
+        const configured = new Set(currentMains.map((mains) => mains.sensor_id).filter((sensorId) => sensorId !== allowSensorId));
+        const available = Array.from(sensorsById.values()).filter((sensor) => !configured.has(sensor.entity_id));
+        const editing = Boolean(allowSensorId);
+        mainsConfigSensorSelect.innerHTML = "";
+        if (!available.length) {
+            mainsConfigSensorSelect.innerHTML = `<option value="">No additional power sensors available</option>`;
+            mainsConfigSensorSelect.disabled = true;
+            confirmMainsConfigButton.disabled = true;
+            mainsConfigStatus.textContent = "Every available Home Assistant power sensor is already configured as a mains power sensor.";
+            return;
+        }
+        mainsConfigSensorSelect.disabled = false;
+        confirmMainsConfigButton.disabled = false;
+        mainsConfigStatus.textContent = "";
+        if (!editing) {
+            const placeholder = document.createElement("option");
+            placeholder.value = "";
+            placeholder.textContent = "Select a mains power sensor";
+            placeholder.disabled = true;
+            placeholder.selected = true;
+            mainsConfigSensorSelect.appendChild(placeholder);
+        }
+        available.forEach((sensor) => {
+            const option = document.createElement("option");
+            option.value = sensor.entity_id;
+            option.textContent = sensor.friendly_name || sensor.entity_id;
+            mainsConfigSensorSelect.appendChild(option);
+        });
+    }
+
+    async function persistMainsConfiguration(nextMains, nextAssignments, selectedAfterSave = null) {
+        currentMains = nextMains;
+        currentApplianceMains = nextAssignments;
+        const primaryMains = currentMains[0] || null;
+        const response = await fetch("config", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                main_sensor_id: primaryMains?.sensor_id || null,
+                main_sensor_unit: primaryMains?.unit || null,
+                mains: currentMains,
+                appliance_mains: currentApplianceMains,
+            }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload.message || `Failed to save mains configuration: HTTP ${response.status}`);
+        }
+        await fetchConfig();
+        if (selectedAfterSave && mainSensorSelect) {
+            populateMainsSelect(selectedAfterSave);
+        }
+    }
+
+    async function confirmMainsConfig() {
+        const sensorId = mainsConfigSensorSelect?.value || "";
+        const label = mainsConfigLabelInput?.value?.trim() || "";
+        if (!sensorId) {
+            if (mainsConfigStatus) mainsConfigStatus.textContent = "Select a Home Assistant power sensor.";
+            throw new Error("Select a Home Assistant power sensor.");
+        }
+        if (!label) {
+            if (mainsConfigStatus) mainsConfigStatus.textContent = "Enter a display name for this mains power sensor.";
+            if (mainsConfigLabelInput) mainsConfigLabelInput.focus();
+            throw new Error("Enter a display name for this mains power sensor.");
+        }
+        const duplicate = currentMains.some((mains) => mains.sensor_id === sensorId && mains.sensor_id !== pendingMainsEditSensorId);
+        if (duplicate) {
+            if (mainsConfigStatus) mainsConfigStatus.textContent = "That sensor is already configured as another mains power sensor.";
+            throw new Error("That sensor is already configured as another mains power sensor.");
+        }
+        const sensorMeta = allSensorsById.get(sensorId);
+        let nextMains;
+        let nextAssignments = { ...currentApplianceMains };
+        if (pendingMainsEditSensorId) {
+            const oldSensorId = pendingMainsEditSensorId;
+            nextMains = currentMains.map((mains) => mains.sensor_id === oldSensorId
+                ? { sensor_id: sensorId, label, unit: sensorMeta?.unit_of_measurement || mains.unit || null }
+                : mains);
+            Object.entries(nextAssignments).forEach(([modelKey, assignedSensorId]) => {
+                if (assignedSensorId === oldSensorId) nextAssignments[modelKey] = sensorId;
+            });
+        } else {
+            nextMains = [
+                ...currentMains,
+                { sensor_id: sensorId, label, unit: sensorMeta?.unit_of_measurement || null },
+            ];
+        }
+        await persistMainsConfiguration(nextMains, nextAssignments, sensorId);
+        closeMainsConfigModal();
+        await Promise.all([fetchAndRenderSignal(), fetchEmbeddings()]);
+    }
+
+    async function deleteMainsFeed(sensorId) {
+        const mains = currentMains.find((item) => item.sensor_id === sensorId);
+        if (!mains) return;
+        const nextMains = currentMains.filter((item) => item.sensor_id !== sensorId);
+        const nextAssignments = { ...currentApplianceMains };
+        let unassignedCount = 0;
+        currentEmbeddings.forEach((embedding) => {
+            if (modelAssignedMainsId(embedding) === sensorId) {
+                nextAssignments[embedding.model_key] = null;
+                unassignedCount += 1;
+            }
+        });
+        const nextSelection = unassignedCount > 0 && nextMains.length > 1 ? "__all__" : (nextMains[0]?.sensor_id || "");
+        await persistMainsConfiguration(nextMains, nextAssignments, nextSelection);
+        await Promise.all([fetchAndRenderSignal(), fetchEmbeddings()]);
+        showMessage(
+            unassignedCount > 0
+                ? "Mains feed deleted. Assigned models are now visible under Unassigned models."
+                : "Mains feed deleted.",
+            "success"
+        );
     }
 
     async function refreshAll() {
@@ -3993,7 +4671,18 @@
 
     window.initializeDashboardUI = function() {
         mainSensorSelect = document.getElementById("mainSensorSelect");
+        mainsEmptyHint = document.getElementById("mainsEmptyHint");
+        mainsEmptyHintAddButton = document.getElementById("mainsEmptyHintAddButton");
         historyRangeSelect = document.getElementById("historyRangeSelect");
+        addMainsButton = document.getElementById("addMainsButton");
+        applianceModelsSummary = document.getElementById("applianceModelsSummary");
+        mainsConfigModal = document.getElementById("mainsConfigModal");
+        mainsConfigModalTitle = document.getElementById("mainsConfigModalTitle");
+        mainsConfigSensorSelect = document.getElementById("mainsConfigSensorSelect");
+        mainsConfigLabelInput = document.getElementById("mainsConfigLabelInput");
+        mainsConfigStatus = document.getElementById("mainsConfigStatus");
+        confirmMainsConfigButton = document.getElementById("confirmMainsConfigButton");
+        cancelMainsConfigButton = document.getElementById("cancelMainsConfigButton");
         mainsSignalChartShell = document.getElementById("mainsSignalChartShell");
         addApplianceButton = document.getElementById("addApplianceButton");
         chartLoadingOverlay = document.getElementById("chartLoadingOverlay");
@@ -4014,6 +4703,10 @@
         deleteEmbeddingModalMessage = document.getElementById("deleteEmbeddingModalMessage");
         confirmDeleteEmbeddingButton = document.getElementById("confirmDeleteEmbeddingButton");
         cancelDeleteEmbeddingButton = document.getElementById("cancelDeleteEmbeddingButton");
+        deleteMainsModal = document.getElementById("deleteMainsModal");
+        deleteMainsModalMessage = document.getElementById("deleteMainsModalMessage");
+        confirmDeleteMainsButton = document.getElementById("confirmDeleteMainsButton");
+        cancelDeleteMainsButton = document.getElementById("cancelDeleteMainsButton");
         realtimeHelpModal = document.getElementById("realtimeHelpModal");
         closeRealtimeHelpButton = document.getElementById("closeRealtimeHelpButton");
         baseLoadHelpModal = document.getElementById("baseLoadHelpModal");
@@ -4034,6 +4727,7 @@
         predictionPreviewChartCanvas = document.getElementById("predictionPreviewChart");
         predictionPreviewIntervalsCanvas = document.getElementById("predictionPreviewIntervals");
         closeDeleteEmbeddingModal();
+        closeDeleteMainsModal();
         closeRealtimeHelpModal();
         closeBaseLoadHelpModal();
         closePredictionPreview();
@@ -4052,6 +4746,37 @@
                 trainingButton.click();
             }
         };
+        addMainsButtonHandler = () => openMainsConfigModal();
+        mainsEmptyHintAddButtonHandler = () => openMainsConfigModal();
+        confirmMainsConfigHandler = async () => {
+            const wasEditing = Boolean(pendingMainsEditSensorId);
+            try {
+                await confirmMainsConfig();
+                showMessage(wasEditing ? "Mains feed updated." : "Mains feed added.", "success");
+            } catch (error) {
+                console.error("Mains configuration failed:", error);
+                if (mainsConfigStatus) mainsConfigStatus.textContent = error.message || "Failed to save mains power sensor.";
+            }
+        };
+        cancelMainsConfigHandler = () => closeMainsConfigModal();
+        mainsConfigOverlayHandler = (event) => {
+            if (event.target === mainsConfigModal) closeMainsConfigModal();
+        };
+        confirmDeleteMainsHandler = async () => {
+            if (!pendingDeleteMainsSensorId) return;
+            try {
+                const sensorId = pendingDeleteMainsSensorId;
+                await deleteMainsFeed(sensorId);
+                closeDeleteMainsModal();
+            } catch (error) {
+                console.error("Mains delete failed:", error);
+                showMessage(error.message || "Failed to delete mains power sensor.", "error");
+            }
+        };
+        cancelDeleteMainsHandler = () => closeDeleteMainsModal();
+        deleteMainsOverlayHandler = (event) => {
+            if (event.target === deleteMainsModal) closeDeleteMainsModal();
+        };
         previewAllEmbeddingsHandler = async () => {
             await openAllPredictionPreviews();
         };
@@ -4069,6 +4794,16 @@
                 );
                 return;
             }
+            const editMainsButton = event.target.closest("[data-mains-edit]");
+            if (editMainsButton) {
+                openMainsConfigModal(editMainsButton.getAttribute("data-mains-edit"));
+                return;
+            }
+            const deleteMainsButton = event.target.closest("[data-mains-delete]");
+            if (deleteMainsButton) {
+                openDeleteMainsModal(deleteMainsButton.getAttribute("data-mains-delete"));
+                return;
+            }
             const button = event.target.closest("[data-embedding-delete]");
             if (!button) return;
             const modelKey = button.getAttribute("data-embedding-delete");
@@ -4076,6 +4811,21 @@
             openDeleteEmbeddingModal(modelKey, label);
         };
         embeddingsListChangeHandler = async (event) => {
+            const mainsSelector = event.target.closest("[data-embedding-mains]");
+            if (mainsSelector) {
+                const modelKey = mainsSelector.getAttribute("data-embedding-mains");
+                const mainsSensorId = mainsSelector.value || null;
+                mainsSelector.disabled = true;
+                try {
+                    await updateEmbeddingMainsAssignment(modelKey, mainsSensorId);
+                } catch (error) {
+                    console.error("Appliance model mains assignment failed:", error);
+                    showMessage(error.message || "Failed to assign appliance model.", "error");
+                    await fetchEmbeddings();
+                }
+                return;
+            }
+
             const selector = event.target.closest("[data-embedding-online]");
             if (!selector) return;
 
@@ -4168,16 +4918,17 @@
         sensorChangeHandler = async () => {
             try {
                 if (activeInlinePredictions.length) clearInlinePrediction();
-                await saveConfig();
+                renderEmbeddings(currentEmbeddings);
                 await fetchAndRenderSignal();
             } catch (error) {
                 console.error("Signal update after sensor change failed:", error);
-                showMessage(error.message || "Failed to save mains sensor.", "error");
+                showMessage(error.message || "Failed to update mains view.", "error");
             }
         };
         rangeChangeHandler = async () => {
             try {
                 if (activeInlinePredictions.length) clearInlinePrediction();
+                renderEmbeddings(currentEmbeddings);
                 await fetchAndRenderSignal();
             } catch (error) {
                 console.error("Signal update after range change failed:", error);
@@ -4192,6 +4943,8 @@
         };
 
         if (previewAllEmbeddingsButton) previewAllEmbeddingsButton.addEventListener("click", previewAllEmbeddingsHandler);
+        if (addMainsButton) addMainsButton.addEventListener("click", addMainsButtonHandler);
+        if (mainsEmptyHintAddButton) mainsEmptyHintAddButton.addEventListener("click", mainsEmptyHintAddButtonHandler);
         addApplianceButton.addEventListener("click", addApplianceButtonHandler);
         embeddingsList.addEventListener("click", embeddingsListClickHandler);
         embeddingsList.addEventListener("change", embeddingsListChangeHandler);
@@ -4204,6 +4957,9 @@
         }
         confirmDeleteEmbeddingButton.addEventListener("click", confirmDeleteEmbeddingHandler);
         cancelDeleteEmbeddingButton.addEventListener("click", cancelDeleteEmbeddingHandler);
+        if (confirmDeleteMainsButton) confirmDeleteMainsButton.addEventListener("click", confirmDeleteMainsHandler);
+        if (cancelDeleteMainsButton) cancelDeleteMainsButton.addEventListener("click", cancelDeleteMainsHandler);
+        if (deleteMainsModal) deleteMainsModal.addEventListener("click", deleteMainsOverlayHandler);
         closeRealtimeHelpButton.addEventListener("click", closeRealtimeHelpHandler);
         realtimeHelpModal.addEventListener("click", realtimeHelpOverlayHandler);
         if (closeBaseLoadHelpButton) closeBaseLoadHelpButton.addEventListener("click", closeBaseLoadHelpHandler);
@@ -4213,6 +4969,9 @@
         if (addPredictionOverlayButton) addPredictionOverlayButton.addEventListener("click", addPredictionOverlayHandler);
         if (resetPredictionZoomButton) resetPredictionZoomButton.addEventListener("click", resetPredictionZoomHandler);
         if (dashboardTrainingJobsPopupClose) dashboardTrainingJobsPopupClose.addEventListener("click", dashboardTrainingJobsPopupCloseHandler);
+        if (confirmMainsConfigButton) confirmMainsConfigButton.addEventListener("click", confirmMainsConfigHandler);
+        if (cancelMainsConfigButton) cancelMainsConfigButton.addEventListener("click", cancelMainsConfigHandler);
+        if (mainsConfigModal) mainsConfigModal.addEventListener("click", mainsConfigOverlayHandler);
         mainSensorSelect.addEventListener("change", sensorChangeHandler);
         historyRangeSelect.addEventListener("change", rangeChangeHandler);
         latestPowerPollTimer = window.setInterval(latestPowerPollTickHandler, 15000);
@@ -4231,6 +4990,8 @@
 
     window.cleanupDashboardUI = function() {
         if (previewAllEmbeddingsButton && previewAllEmbeddingsHandler) previewAllEmbeddingsButton.removeEventListener("click", previewAllEmbeddingsHandler);
+        if (addMainsButton && addMainsButtonHandler) addMainsButton.removeEventListener("click", addMainsButtonHandler);
+        if (mainsEmptyHintAddButton && mainsEmptyHintAddButtonHandler) mainsEmptyHintAddButton.removeEventListener("click", mainsEmptyHintAddButtonHandler);
         if (addApplianceButton && addApplianceButtonHandler) addApplianceButton.removeEventListener("click", addApplianceButtonHandler);
         if (embeddingsList && embeddingsListClickHandler) embeddingsList.removeEventListener("click", embeddingsListClickHandler);
         if (embeddingsList && embeddingsListChangeHandler) embeddingsList.removeEventListener("change", embeddingsListChangeHandler);
@@ -4243,6 +5004,9 @@
         }
         if (confirmDeleteEmbeddingButton && confirmDeleteEmbeddingHandler) confirmDeleteEmbeddingButton.removeEventListener("click", confirmDeleteEmbeddingHandler);
         if (cancelDeleteEmbeddingButton && cancelDeleteEmbeddingHandler) cancelDeleteEmbeddingButton.removeEventListener("click", cancelDeleteEmbeddingHandler);
+        if (confirmDeleteMainsButton && confirmDeleteMainsHandler) confirmDeleteMainsButton.removeEventListener("click", confirmDeleteMainsHandler);
+        if (cancelDeleteMainsButton && cancelDeleteMainsHandler) cancelDeleteMainsButton.removeEventListener("click", cancelDeleteMainsHandler);
+        if (deleteMainsModal && deleteMainsOverlayHandler) deleteMainsModal.removeEventListener("click", deleteMainsOverlayHandler);
         if (closeRealtimeHelpButton && closeRealtimeHelpHandler) closeRealtimeHelpButton.removeEventListener("click", closeRealtimeHelpHandler);
         if (realtimeHelpModal && realtimeHelpOverlayHandler) realtimeHelpModal.removeEventListener("click", realtimeHelpOverlayHandler);
         if (closeBaseLoadHelpButton && closeBaseLoadHelpHandler) closeBaseLoadHelpButton.removeEventListener("click", closeBaseLoadHelpHandler);
@@ -4252,6 +5016,9 @@
         if (addPredictionOverlayButton && addPredictionOverlayHandler) addPredictionOverlayButton.removeEventListener("click", addPredictionOverlayHandler);
         if (resetPredictionZoomButton && resetPredictionZoomHandler) resetPredictionZoomButton.removeEventListener("click", resetPredictionZoomHandler);
         if (dashboardTrainingJobsPopupClose && dashboardTrainingJobsPopupCloseHandler) dashboardTrainingJobsPopupClose.removeEventListener("click", dashboardTrainingJobsPopupCloseHandler);
+        if (confirmMainsConfigButton && confirmMainsConfigHandler) confirmMainsConfigButton.removeEventListener("click", confirmMainsConfigHandler);
+        if (cancelMainsConfigButton && cancelMainsConfigHandler) cancelMainsConfigButton.removeEventListener("click", cancelMainsConfigHandler);
+        if (mainsConfigModal && mainsConfigOverlayHandler) mainsConfigModal.removeEventListener("click", mainsConfigOverlayHandler);
         if (mainSensorSelect && sensorChangeHandler) mainSensorSelect.removeEventListener("change", sensorChangeHandler);
         if (historyRangeSelect && rangeChangeHandler) historyRangeSelect.removeEventListener("change", rangeChangeHandler);
 
@@ -4282,6 +5049,7 @@
         streamedPredictionNeedsFullRender = false;
 
         closeDeleteEmbeddingModal();
+        closeDeleteMainsModal();
         closeRealtimeHelpModal();
         closePredictionPreview();
 
@@ -4299,7 +5067,18 @@
         }
 
         mainSensorSelect = null;
+        mainsEmptyHint = null;
+        mainsEmptyHintAddButton = null;
         historyRangeSelect = null;
+        addMainsButton = null;
+        applianceModelsSummary = null;
+        mainsConfigModal = null;
+        mainsConfigModalTitle = null;
+        mainsConfigSensorSelect = null;
+        mainsConfigLabelInput = null;
+        mainsConfigStatus = null;
+        confirmMainsConfigButton = null;
+        cancelMainsConfigButton = null;
         mainsSignalChartShell = null;
         addApplianceButton = null;
         chartLoadingOverlay = null;
@@ -4319,6 +5098,10 @@
         deleteEmbeddingModalMessage = null;
         confirmDeleteEmbeddingButton = null;
         cancelDeleteEmbeddingButton = null;
+        deleteMainsModal = null;
+        deleteMainsModalMessage = null;
+        confirmDeleteMainsButton = null;
+        cancelDeleteMainsButton = null;
         realtimeHelpModal = null;
         closeRealtimeHelpButton = null;
         baseLoadHelpModal = null;
@@ -4348,10 +5131,19 @@
         fullSignalSeries = [];
         activeInlinePredictions = [];
         currentEmbeddings = [];
+        currentMains = [];
+        currentApplianceMains = {};
+        pendingMainsEditSensorId = null;
+        pendingDeleteMainsSensorId = null;
         streamedPredictionRefreshTimer = null;
         streamedPredictionNeedsFullRender = false;
         isDisaggregationRunning = false;
         addApplianceButtonHandler = null;
+        addMainsButtonHandler = null;
+        mainsEmptyHintAddButtonHandler = null;
+        confirmMainsConfigHandler = null;
+        cancelMainsConfigHandler = null;
+        mainsConfigOverlayHandler = null;
         previewAllEmbeddingsHandler = null;
         sensorChangeHandler = null;
         rangeChangeHandler = null;
@@ -4359,6 +5151,9 @@
         embeddingsListChangeHandler = null;
         confirmDeleteEmbeddingHandler = null;
         cancelDeleteEmbeddingHandler = null;
+        confirmDeleteMainsHandler = null;
+        cancelDeleteMainsHandler = null;
+        deleteMainsOverlayHandler = null;
         closeRealtimeHelpHandler = null;
         realtimeHelpOverlayHandler = null;
         closeBaseLoadHelpHandler = null;

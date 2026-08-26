@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.9
+
+- Added support for configuring multiple mains power sensors and assigning appliance models to the correct mains source.
+- Preserved compatibility with existing single-mains installations while automatically migrating legacy models to the primary mains sensor.
+- Added unassigned-model handling so models remain available after their mains sensor is deleted and can be reassigned without retraining.
+- Updated live disaggregation to run each appliance model only against its assigned mains power sensor.
+- Updated offline preview and aggregated mains preview to group predictions by mains sensor and calculate base-load energy per mains before summing totals.
+- Updated training so new appliance models are saved with the selected mains power sensor assignment.
+- Improved configuration normalization so stale model assignments to removed mains sensors are saved as unassigned.
+- Improved mains management in the dashboard with add, edit, and delete modals, required display names, clearer validation errors, and refreshed sensor selections after changes.
+- Refined the appliance model dashboard layout, model counts, unassigned-model presentation, and disaggregation controls for clearer multi-mains workflows.
+
 ## 1.1.8
 
 - Added a configurable `sensor_max_gap_s` add-on option for mains sensors with slower update cadences, defaulting to 60 seconds.
