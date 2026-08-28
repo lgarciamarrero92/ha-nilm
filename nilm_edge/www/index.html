@@ -306,7 +306,9 @@
                             newScript.src = script.src;
                             newScript.async = false;
                         } else {
-                            newScript.textContent = script.textContent;
+                            // Component scripts can be loaded more than once as the user
+                            // navigates. Keep their lexical state isolated per load.
+                            newScript.textContent = `(function() {\n${script.textContent}\n})();`;
                         }
                         document.body.appendChild(newScript);
                         // No need to remove immediately; they define global functions or run once.

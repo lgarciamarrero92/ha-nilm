@@ -123,7 +123,10 @@ async def fetch_history_points(
 
     for state_obj in sensor_history:
         try:
-            timestamp_str = state_obj.get("last_changed") or state_obj.get("last_updated")
+            # A power sensor may refresh its state without changing the numeric
+            # value. Prefer last_updated so those fresh samples are not mistaken
+            # for a long recorder gap.
+            timestamp_str = state_obj.get("last_updated") or state_obj.get("last_changed")
             value_str = state_obj.get("state")
 
             if not timestamp_str or value_str is None:

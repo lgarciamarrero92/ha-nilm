@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.8.3
+
+- Preserved Home Assistant power-sensor refresh timestamps when preparing training history, avoiding false mains gaps for unchanged values.
+- Fixed Dashboard component reloads so All Mains always runs the current multi-mains grouping and preview logic after navigating from Training.
+
 ## 1.1.8.2
 
 - Added clear training diagnostics for insufficient continuous mains history and stale data gaps.
