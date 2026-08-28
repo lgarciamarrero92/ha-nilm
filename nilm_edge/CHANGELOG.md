@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.8.5
+
+- Restored the chart header to show only the mains legend; appliance identities remain in the dedicated prediction chips below.
+- Assigned preview colors across the complete all-mains result so appliances from later mains feeds no longer reuse earlier colors.
+
 ## 1.1.8.4
 
 - Treated Home Assistant historical power data as state-change history during training and offline previews, preserving each reported value until its next history event instead of rejecting quiet intervals as stale samples.

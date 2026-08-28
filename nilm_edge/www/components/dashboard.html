@@ -3382,9 +3382,12 @@
     }
 
     function colorForInlinePrediction(modelKey, fallbackIndex) {
-        const existingIndex = activeInlinePredictions.findIndex((prediction) => prediction.modelKey === modelKey);
-        const colorIndex = existingIndex >= 0 ? existingIndex : fallbackIndex;
-        return PREVIEW_OVERLAY_COLORS[colorIndex % PREVIEW_OVERLAY_COLORS.length];
+        const existing = activeInlinePredictions.find((prediction) => prediction.modelKey === modelKey);
+        if (existing?.color) return existing.color;
+
+        const usedColors = new Set(activeInlinePredictions.map((prediction) => prediction.color).filter(Boolean));
+        const availableColor = PREVIEW_OVERLAY_COLORS.find((color) => !usedColors.has(color));
+        return availableColor || PREVIEW_OVERLAY_COLORS[fallbackIndex % PREVIEW_OVERLAY_COLORS.length];
     }
 
     function upsertInlinePrediction(inlinePrediction) {
@@ -3431,7 +3434,7 @@
 
         let changed = 0;
         let addedModel = false;
-        predictions.forEach((prediction, index) => {
+        predictions.forEach((prediction) => {
             const modelKey = prediction?.model_key;
             if (!modelKey) return;
             const powerSeries = Array.isArray(prediction.power_series) ? prediction.power_series : [];
@@ -3457,7 +3460,7 @@
                     powerSeries: powerSeries.slice(),
                     baseloadSeries: baseloadSeries.slice(),
                     stateSeries: stateSeries.slice(),
-                    color: colorForInlinePrediction(modelKey, index),
+                    color: colorForInlinePrediction(modelKey, activeInlinePredictions.length),
                 });
             }
             changed += 1;
@@ -3922,7 +3925,7 @@
                     legend: {
                         display: true,
                         labels: {
-                            filter: (item) => Boolean(item?.text),
+                            filter: (item) => item?.text === "Mains Power",
                         }
                     },
                     tooltip: {
