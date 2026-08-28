@@ -4,7 +4,7 @@
 
 This app runs real-time NILM inference inside Home Assistant.
 
-It monitors one mains power sensor, applies trained appliance models, and publishes live appliance power, cumulative energy-consumed, and on/off entities back to Home Assistant.
+It monitors one or more mains power sensors, applies trained appliance models, and publishes live appliance power, cumulative energy-consumed, and on/off entities back to Home Assistant.
 
 NILM provides estimation from aggregate mains data, not direct per-appliance measurement.
 
@@ -38,6 +38,12 @@ Notes:
 - Training range is limited to the previous 7 days.
 - Better training quality comes from complete labeling of the chosen interval.
 - Live entities are updated approximately every 8 seconds.
+
+## Multiple Phase
+
+NILM supports one or more mains power sensors, making it suitable for split-phase and multi-phase electrical supplies. Train each appliance model using the mains sensor that measures its circuit. In the NILM Dashboard, you can view each configured mains sensor separately or view their aggregate, calculated as the sum of all declared mains sensors.
+
+Each appliance model name must be unique within its model bundle, including models assigned to different mains sensors. Use names such as `fridge_kitchen` and `fridge_garage`; names that differ only by capitalization, spaces, or punctuation can resolve to the same internal name and replace an existing model.
 
 ## Published Entities
 

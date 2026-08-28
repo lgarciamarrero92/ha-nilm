@@ -43,7 +43,7 @@ You can run the training server either:
 
 ### NILM
 
-- Monitors one mains power sensor in Home Assistant.
+- Monitors one or more mains power sensors in Home Assistant.
 - Runs live NILM inference.
 - Publishes estimated appliance entities (`power`, cumulative `energy consumed`, and `on/off`) for dashboards, automations, and the Energy dashboard.
 - Provides UI for setup, preview, and training job preparation.
@@ -196,6 +196,12 @@ Home Assistant Container installs use the long-lived access token shown in the c
 Notes:
 - Training range is limited to the previous 7 days.
 - Live entities update approximately every 8 seconds.
+
+## Multiple Phase
+
+NILM supports one or more mains power sensors, making it suitable for split-phase and multi-phase electrical supplies. Train each appliance model using the mains sensor that measures its circuit. In the NILM Dashboard, you can view each configured mains sensor separately or view their aggregate, calculated as the sum of all declared mains sensors.
+
+Each appliance model name must be unique within its model bundle, even when the appliances are connected to different mains sensors. Use descriptive names such as `fridge_kitchen` and `fridge_garage` rather than creating two models named `fridge`. Names that differ only by capitalization, spaces, or punctuation can resolve to the same internal name.
 
 ## Documentation
 

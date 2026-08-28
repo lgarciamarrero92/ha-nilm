@@ -738,6 +738,13 @@
         margin-top: 10px;
     }
 
+    .mains-group-empty {
+        padding: 14px 16px;
+        color: #64748b;
+        font-size: 0.84rem;
+        line-height: 1.45;
+    }
+
     .embedding-topline {
         display: flex;
         align-items: center;
@@ -4236,6 +4243,12 @@
                 </div>
             `;
             groupModels.forEach((embedding) => group.appendChild(renderEmbeddingCard(embedding)));
+            if (!groupModels.length) {
+                const emptyMessage = document.createElement("div");
+                emptyMessage.className = "mains-group-empty";
+                emptyMessage.textContent = "No appliance models are trained for this mains sensor yet. Train an appliance from the Training interface to add one.";
+                group.appendChild(emptyMessage);
+            }
             embeddingsList.appendChild(group);
         });
 

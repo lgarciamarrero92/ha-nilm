@@ -1,38 +1,15 @@
 # Changelog
 
-## 1.1.8.5
-
-- Restored the chart header to show only the mains legend; appliance identities remain in the dedicated prediction chips below.
-- Assigned preview colors across the complete all-mains result so appliances from later mains feeds no longer reuse earlier colors.
-
-## 1.1.8.4
-
-- Treated Home Assistant historical power data as state-change history during training and offline previews, preserving each reported value until its next history event instead of rejecting quiet intervals as stale samples.
-- Kept the configurable stale-sample limit for live disaggregation, where a sensor genuinely needs to be refreshed.
-- Displayed every appliance prediction in the all-mains chart legend so combined previews visibly identify the traces that were added.
-
-## 1.1.8.3
-
-- Preserved Home Assistant power-sensor refresh timestamps when preparing training history, avoiding false mains gaps for unchanged values.
-- Fixed Dashboard component reloads so All Mains always runs the current multi-mains grouping and preview logic after navigating from Training.
-
-## 1.1.8.2
-
-- Added clear training diagnostics for insufficient continuous mains history and stale data gaps.
-- Constrained appliance preview estimates to the available non-baseload power of each assigned mains feed.
-- Corrected all-mains visualization to sum differently paced mains sensors on a shared zero-order-hold grid.
-
 ## 1.1.9
 
-- Added support for configuring multiple mains power sensors and assigning appliance models to the correct mains source.
-- Preserved compatibility with existing single-mains installations while automatically migrating legacy models to the primary mains sensor.
+- Added support for configuring multiple mains power sensors and assigning each appliance model to the correct mains source.
+- Preserved compatibility with existing single-mains installations while migrating legacy models to the primary mains sensor.
 - Added unassigned-model handling so models remain available after their mains sensor is deleted and can be reassigned without retraining.
-- Updated live disaggregation to run each appliance model only against its assigned mains power sensor.
-- Updated offline preview and aggregated mains preview to group predictions by mains sensor and calculate base-load energy per mains before summing totals.
-- Updated training so new appliance models are saved with the selected mains power sensor assignment.
-- Improved configuration normalization so stale model assignments to removed mains sensors are saved as unassigned.
-- Improved mains management in the dashboard with add, edit, and delete modals, required display names, clearer validation errors, and refreshed sensor selections after changes.
-- Refined the appliance model dashboard layout, model counts, unassigned-model presentation, and disaggregation controls for clearer multi-mains workflows.
+- Updated live disaggregation and offline previews to run each model against its assigned mains feed.
+- Added the `All Mains` view, which aggregates differently paced, non-overlapping mains feeds and runs each appliance model against its own source.
+- Constrained combined-preview estimates to the available non-baseload power on each mains feed and kept appliance overlay colors distinct across all feeds.
+- Treated Home Assistant historical power data as state-change history during training and previews, preserving recorded values through quiet intervals while retaining the configurable freshness limit for live inference.
+- Improved mains management, training diagnostics, model assignment controls, and the dashboard preview workflow for multi-mains installations.
 
 ## 1.1.8
 
