@@ -505,16 +505,22 @@ def build_embeddings_training_payload(
             f"need at least {required_span_s:.1f}s ({T} points at {dt:.1f}s)."
         )
 
-    # Robust gap handling
-    max_hold_s = float(max_hold_s) if max_hold_s and max_hold_s > 0 else (
-        float(max_hold_factor) * dt if max_hold_factor and max_hold_factor > 0 else None
-    )
+    # Historical Home Assistant data is a state-change log: an absent row means
+    # the last reported value is still current.  An explicit None therefore
+    # preserves that state through the selected historical range.  Callers that
+    # need a stale-data cutoff can still provide a positive max_hold_s value.
+    if max_hold_s is None:
+        effective_max_hold_s = None
+    elif max_hold_s > 0:
+        effective_max_hold_s = float(max_hold_s)
+    else:
+        effective_max_hold_s = float(max_hold_factor) * dt if max_hold_factor and max_hold_factor > 0 else None
     fill_value_w = float(settings.query_mean)  # best default in the query normalization space
 
     y_grid, mains_valid_mask = zoh_resample_to_grid(
         pts,
         grid_t,
-        max_hold_s=max_hold_s,
+        max_hold_s=effective_max_hold_s,
         fill_value=fill_value_w,
         return_valid_mask=True,
     )
@@ -550,7 +556,7 @@ def build_embeddings_training_payload(
     else:
         if len(gt_pts) < 2:
             raise ValueError("applianceSensorHistoryData must contain at least two valid points for sensor supervision.")
-        gt_grid = zoh_resample_to_grid(gt_pts, grid_t, max_hold_s=max_hold_s, fill_value=0.0)
+        gt_grid = zoh_resample_to_grid(gt_pts, grid_t, max_hold_s=effective_max_hold_s, fill_value=0.0)
         gt_grid = np.maximum(gt_grid.astype(np.float32), 0.0)
         y_power = gt_grid[pred_idx:(pred_idx + N)].astype(np.float32)
         gt_on_mask = compute_on_mask(
@@ -569,13 +575,13 @@ def build_embeddings_training_payload(
             pts,
             mains_valid_mask,
             sample_period_s=dt,
-            max_hold_s=max_hold_s,
+            max_hold_s=effective_max_hold_s,
         )
         required_span_s = max(0.0, (T - 1) * dt)
         stale_detail = (
-            f" Found {int(validity['stale_gap_count'])} raw gap(s) above {max_hold_s:.1f}s "
+            f" Found {int(validity['stale_gap_count'])} raw gap(s) above {effective_max_hold_s:.1f}s "
             f"(largest {validity['max_stale_gap_s']:.1f}s)."
-            if max_hold_s is not None and validity["stale_gap_count"]
+            if effective_max_hold_s is not None and validity["stale_gap_count"]
             else ""
         )
         raise ValueError(
@@ -695,7 +701,7 @@ def build_embeddings_training_payload(
             "range_end": float(t_end),
             "range_duration_h": float(max(0.0, t_end - t_start) / 3600.0),
             "align_grid": align_grid,
-            "max_hold_s": max_hold_s,
+            "max_hold_s": effective_max_hold_s,
             "fill_value_w": fill_value_w,
             "on_threshold_w": float(on_threshold_w),
             "min_on_s": float(min_on_s),

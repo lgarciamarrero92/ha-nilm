@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.8.4
+
+- Treated Home Assistant historical power data as state-change history during training and offline previews, preserving each reported value until its next history event instead of rejecting quiet intervals as stale samples.
+- Kept the configurable stale-sample limit for live disaggregation, where a sensor genuinely needs to be refreshed.
+- Displayed every appliance prediction in the all-mains chart legend so combined previews visibly identify the traces that were added.
+
 ## 1.1.8.3
 
 - Preserved Home Assistant power-sensor refresh timestamps when preparing training history, avoiding false mains gaps for unchanged values.

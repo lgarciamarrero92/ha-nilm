@@ -8,6 +8,7 @@ import sys
 import tempfile
 import shutil
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 import numpy as np
 from aiohttp import web
@@ -362,7 +363,7 @@ def _build_offline_preview_inputs(
     num_threads: int = 2,
     align_grid: str = "start",
     max_hold_factor: float = 5.0,
-    max_hold_s: float = DEFAULT_SENSOR_MAX_GAP_S,
+    max_hold_s: Optional[float] = DEFAULT_SENSOR_MAX_GAP_S,
 ):
     parsed_points = parse_mains_points([{"x": float(ts) * 1000.0, "y": float(value)} for ts, value in (points or [])])
     if len(parsed_points) < 2:
@@ -393,14 +394,17 @@ def _build_offline_preview_inputs(
             "num_threads": int(num_threads),
         }
 
-    max_hold_s = float(max_hold_s) if max_hold_s and max_hold_s > 0 else (
-        float(max_hold_factor) * dt if max_hold_factor and max_hold_factor > 0 else None
-    )
+    if max_hold_s is None:
+        effective_max_hold_s = None
+    elif max_hold_s > 0:
+        effective_max_hold_s = float(max_hold_s)
+    else:
+        effective_max_hold_s = float(max_hold_factor) * dt if max_hold_factor and max_hold_factor > 0 else None
     fill_value_w = float(settings.query_mean)
     y_grid, mains_valid_mask = zoh_resample_to_grid(
         parsed_points,
         grid_t,
-        max_hold_s=max_hold_s,
+        max_hold_s=effective_max_hold_s,
         fill_value=fill_value_w,
         return_valid_mask=True,
     )
@@ -740,8 +744,7 @@ async def _build_preview_result(bundle_id, safe_name, start_dt, end_dt, provided
             }
             return
 
-        sensor_max_gap_s = _sensor_max_gap_s()
-        preview_inputs = _build_offline_preview_inputs(points, inference_dir=bundle.inference_dir, num_threads=2, align_grid="start", max_hold_s=sensor_max_gap_s)
+        preview_inputs = _build_offline_preview_inputs(points, inference_dir=bundle.inference_dir, num_threads=2, align_grid="start", max_hold_s=None)
         async for update in _extract_preview_embeddings_with_progress(preview_inputs):
             if update.get("phase") == "embeddings_ready":
                 extracted_preview_inputs = update.get("preview_inputs") or {}
@@ -867,8 +870,7 @@ async def _build_preview_all_results(model_entries, start_dt, end_dt, provided_p
                     continue
 
                 model_names = [item["safe_name"] for item in bundle_models]
-                sensor_max_gap_s = _sensor_max_gap_s()
-                preview_inputs = _build_offline_preview_inputs(points, inference_dir=bundle.inference_dir, num_threads=2, align_grid="start", max_hold_s=sensor_max_gap_s)
+                preview_inputs = _build_offline_preview_inputs(points, inference_dir=bundle.inference_dir, num_threads=2, align_grid="start", max_hold_s=None)
                 async for update in _extract_preview_embeddings_with_progress(preview_inputs):
                     if update.get("phase") == "embeddings_ready":
                         extracted_preview_inputs = update.get("preview_inputs") or {}
@@ -991,6 +993,7 @@ async def _run_preview_job(app, job_id, bundle_id, safe_name, start_dt, end_dt, 
             "stream_chunks": True,
             "batch_size": _batch_size(),
             "sensor_max_gap_s": _sensor_max_gap_s(),
+            "preserve_history_holds": True,
             "points": points,
             "models": [{
                 "bundle_id": bundle_id,
@@ -1164,6 +1167,7 @@ async def _run_preview_all_job(app, job_id, model_entries, start_dt, end_dt, pro
                 "mode": "all",
                 "batch_size": _batch_size(),
                 "sensor_max_gap_s": _sensor_max_gap_s(),
+                "preserve_history_holds": True,
                 "points": points,
                 "models": payload_models,
             }):

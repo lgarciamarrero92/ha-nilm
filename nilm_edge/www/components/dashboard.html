@@ -3543,10 +3543,13 @@
                 showMessage("No prediction history is available for the selected range yet.", "error");
                 return;
             }
+            const previewedMainsCount = new Set(
+                activeInlinePredictions.map((prediction) => prediction.mainSensorId || prediction.mainsSensorId).filter(Boolean)
+            ).size;
             showMessage(
                 streamedPredictionChunks > 0
-                    ? "All appliance predictions were streamed into the mains chart."
-                    : "All appliance predictions were added to the mains chart.",
+                    ? `${activeInlinePredictions.length} appliance prediction(s) were streamed from ${previewedMainsCount} mains feed(s).`
+                    : `${activeInlinePredictions.length} appliance prediction(s) were added from ${previewedMainsCount} mains feed(s).`,
                 "success"
             );
         } catch (error) {
@@ -3919,7 +3922,7 @@
                     legend: {
                         display: true,
                         labels: {
-                            filter: (item) => item?.text === "Mains Power",
+                            filter: (item) => Boolean(item?.text),
                         }
                     },
                     tooltip: {
