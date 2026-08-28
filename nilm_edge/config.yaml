@@ -1,5 +1,5 @@
 name: "NILM"
-version: "1.1.8.1"
+version: "1.1.8.2"
 slug: "nilm"
 description: "Non-Intrusive Load Monitoring For Home Assistant"
 url: "https://ha-nilm.bigwicho.com/"

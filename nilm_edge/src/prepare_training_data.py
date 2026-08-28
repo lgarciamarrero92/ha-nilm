@@ -216,6 +216,36 @@ def zoh_resample_to_grid(
     return out
 
 
+def summarize_mains_validity(
+    pts: List[Tuple[float, float]],
+    valid_mask: np.ndarray,
+    *,
+    sample_period_s: float,
+    max_hold_s: Optional[float],
+) -> Dict[str, float]:
+    """Return concise diagnostics for rejected training windows."""
+    mask = np.asarray(valid_mask, dtype=bool)
+    longest_run_samples = 0
+    current_run_samples = 0
+    for is_valid in mask:
+        if is_valid:
+            current_run_samples += 1
+            longest_run_samples = max(longest_run_samples, current_run_samples)
+        else:
+            current_run_samples = 0
+
+    timestamps = np.asarray([point[0] for point in pts], dtype=np.float64)
+    raw_gaps = np.diff(timestamps) if timestamps.size > 1 else np.zeros((0,), dtype=np.float64)
+    stale_gaps = raw_gaps[raw_gaps > float(max_hold_s)] if max_hold_s is not None else np.zeros((0,), dtype=np.float64)
+    return {
+        "invalid_samples": float(np.count_nonzero(~mask)),
+        "longest_valid_span_s": float(max(0, longest_run_samples - 1) * sample_period_s),
+        "max_raw_gap_s": float(np.max(raw_gaps)) if raw_gaps.size else 0.0,
+        "stale_gap_count": float(stale_gaps.size),
+        "max_stale_gap_s": float(np.max(stale_gaps)) if stale_gaps.size else 0.0,
+    }
+
+
 
 
 # -----------------------
@@ -468,9 +498,11 @@ def build_embeddings_training_payload(
     t_end = pts[-1][0]
     grid_t = build_uniform_grid(t_start, t_end, dt, align=align_grid)
     if grid_t.size < T:
+        required_span_s = max(0.0, (T - 1) * dt)
         raise ValueError(
-            f"Not enough resampled points for one window: have {grid_t.size}, need {T}. "
-            f"Span={t_end - t_start:.1f}s dt={dt}"
+            "Not enough history for one training window: "
+            f"have {t_end - t_start:.1f}s ({grid_t.size} resampled points), "
+            f"need at least {required_span_s:.1f}s ({T} points at {dt:.1f}s)."
         )
 
     # Robust gap handling
@@ -533,11 +565,25 @@ def build_embeddings_training_payload(
 
     n_windows_after_gap_filter = int(np.count_nonzero(valid_windows_mask))
     if n_windows_after_gap_filter == 0:
+        validity = summarize_mains_validity(
+            pts,
+            mains_valid_mask,
+            sample_period_s=dt,
+            max_hold_s=max_hold_s,
+        )
+        required_span_s = max(0.0, (T - 1) * dt)
+        stale_detail = (
+            f" Found {int(validity['stale_gap_count'])} raw gap(s) above {max_hold_s:.1f}s "
+            f"(largest {validity['max_stale_gap_s']:.1f}s)."
+            if max_hold_s is not None and validity["stale_gap_count"]
+            else ""
+        )
         raise ValueError(
-            "No valid training windows remain after removing mains gaps. "
-            f"This often happens when the mains sensor updates slower than the configured sensor_max_gap_s ({max_hold_s:.1f}s). "
-            "Choose a cleaner range, reduce missing data, or increase sensor_max_gap_s to match the sensor cadence. "
-            "Using a larger gap can reduce NILM accuracy."
+            "No valid training windows remain after excluding stale mains samples. "
+            f"This model needs {required_span_s:.1f}s of continuous history; the longest valid span is "
+            f"{validity['longest_valid_span_s']:.1f}s."
+            f"{stale_detail} Choose a range containing a continuous span of that length, "
+            "or increase sensor_max_gap_s only when the sensor can reliably hold its last value."
         )
 
     # Build extractor inputs and compute embeddings chunk-by-chunk to keep peak RAM bounded.

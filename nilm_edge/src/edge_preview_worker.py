@@ -29,6 +29,17 @@ def emit(payload):
     sys.stdout.flush()
 
 
+def allocate_preview_power_budget(candidates, available_power_w):
+    """Scale active model estimates so their total fits one mains feed."""
+    total_candidate_power = sum(max(0.0, float(candidate[1])) for candidate in candidates)
+    available_power_w = max(0.0, float(available_power_w))
+    scale = min(1.0, available_power_w / total_candidate_power) if total_candidate_power > 0 else 0.0
+    return [
+        (safe_name, max(0.0, float(candidate_power_w)) * scale, onoff_value, onoff_threshold)
+        for safe_name, candidate_power_w, onoff_value, onoff_threshold in candidates
+    ]
+
+
 def summarize_state_series(state_series):
     series = list(state_series or [])
     if not series:
@@ -513,25 +524,34 @@ def score_predictions_with_progress(
             baseload_value = float(max(0.0, batch_baseload[idx])) if idx < batch_baseload.size else 0.0
             available_appliance_power = float(max(0.0, float(batch_mains[idx]) - baseload_value)) if idx < batch_mains.size else 0.0
 
+            candidates = []
             for bundle_state in bundle_states.values():
                 for safe_name, (ref, onoff_threshold) in bundle_state["model_state"].items():
                     power_w, onoff_value, _power_norm = bundle_state["disaggregator"]._run_head(ref, query_emb)
                     power_w = float(max(0.0, power_w))
-                    power_w = float(min(power_w, available_appliance_power))
                     if onoff_value < onoff_threshold:
                         power_w = 0.0
 
-                    if spool is not None:
-                        spool.append(safe_name, target_ms, power_w, baseload_value, onoff_value, onoff_threshold)
-                    if stream_by_chunk:
-                        chunk_predictions_by_model[safe_name]["power_series"].append({"x": target_ms, "y": power_w})
-                        chunk_predictions_by_model[safe_name]["baseload_series"].append({"x": target_ms, "y": baseload_value})
-                        chunk_predictions_by_model[safe_name]["state_series"].append({
-                            "x": target_ms,
-                            "y": int(onoff_value >= onoff_threshold),
-                            "score": float(onoff_value),
-                            "threshold": float(onoff_threshold),
-                        })
+                    candidates.append((safe_name, power_w, float(onoff_value), float(onoff_threshold)))
+
+            for safe_name, candidate_power_w, onoff_value, onoff_threshold in allocate_preview_power_budget(
+                candidates,
+                available_appliance_power,
+            ):
+                # Models assigned to one mains feed share its non-baseload power budget.
+                power_w = candidate_power_w
+
+                if spool is not None:
+                    spool.append(safe_name, target_ms, power_w, baseload_value, onoff_value, onoff_threshold)
+                if stream_by_chunk:
+                    chunk_predictions_by_model[safe_name]["power_series"].append({"x": target_ms, "y": power_w})
+                    chunk_predictions_by_model[safe_name]["baseload_series"].append({"x": target_ms, "y": baseload_value})
+                    chunk_predictions_by_model[safe_name]["state_series"].append({
+                        "x": target_ms,
+                        "y": int(onoff_value >= onoff_threshold),
+                        "score": float(onoff_value),
+                        "threshold": float(onoff_threshold),
+                    })
 
             processed_inference += 1
             now_mono = time.monotonic()

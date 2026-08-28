@@ -4397,19 +4397,39 @@
         return buildHistoryUrlForSensor(mainSensorSelect.value || "");
     }
 
-    function alignAndSumSeries(seriesList) {
+    function aggregateMainsSeries(seriesList, startMs, endMs) {
         const validSeries = (seriesList || []).filter((series) => Array.isArray(series) && series.length);
         if (!validSeries.length) return [];
-        const reference = validSeries[0];
-        return reference.map((point) => {
-            const x = Number(point?.x);
-            if (!Number.isFinite(x)) return null;
-            const y = validSeries.reduce((sum, series) => {
-                const value = getInterpolatedSeriesValueAtTimestamp(series, x);
-                return sum + (Number.isFinite(value) ? Math.max(0, value) : 0);
-            }, 0);
-            return { x, y };
-        }).filter(Boolean);
+        const safeStart = Number.isFinite(startMs)
+            ? startMs
+            : Math.min(...validSeries.map((series) => Number(series[0]?.x)).filter(Number.isFinite));
+        const safeEnd = Number.isFinite(endMs)
+            ? endMs
+            : Math.max(...validSeries.map((series) => Number(series[series.length - 1]?.x)).filter(Number.isFinite));
+        if (!Number.isFinite(safeStart) || !Number.isFinite(safeEnd) || safeEnd < safeStart) return [];
+
+        const normalized = validSeries.map((series) => series
+            .map((point) => ({ x: Number(point?.x), y: Number(point?.y) }))
+            .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y))
+            .sort((a, b) => a.x - b.x));
+        const indexes = normalized.map(() => -1);
+        const sampleAt = (timestamp) => normalized.reduce((totalPower, series, seriesIndex) => {
+            while (indexes[seriesIndex] + 1 < series.length && series[indexes[seriesIndex] + 1].x <= timestamp) {
+                indexes[seriesIndex] += 1;
+            }
+            return indexes[seriesIndex] >= 0
+                ? totalPower + Math.max(0, series[indexes[seriesIndex]].y)
+                : totalPower;
+        }, 0);
+
+        const out = [];
+        for (let t = safeStart; t <= safeEnd; t += DASHBOARD_DISPLAY_SAMPLE_MS) {
+            out.push({ x: t, y: sampleAt(t) });
+        }
+        if (out.length && out[out.length - 1].x !== safeEnd) {
+            out.push({ x: safeEnd, y: sampleAt(safeEnd) });
+        }
+        return out;
     }
 
     async function fetchSeriesForSensor(sensorEntityId, bounds = null) {
@@ -4438,8 +4458,8 @@
         try {
             const { startUtc, endUtc } = getSelectedRangeBounds();
             if (mainSensorSelect.value === "__all__") {
-                const histories = await Promise.all(currentMains.map((mains) => fetchSeriesForSensor(mains.sensor_id)));
-                fullSignalSeries = alignAndSumSeries(histories.map((series) => buildDashboardDisplaySeries(series, startUtc.getTime(), endUtc.getTime())));
+                const histories = await Promise.all(currentMains.map((mains) => fetchSeriesForSensor(mains.sensor_id, { startUtc, endUtc })));
+                fullSignalSeries = aggregateMainsSeries(histories, startUtc.getTime(), endUtc.getTime());
             } else {
                 const response = await fetch(buildHistoryUrl());
                 if (!response.ok) {

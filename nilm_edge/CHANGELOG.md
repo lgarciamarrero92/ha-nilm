@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.8.2
+
+- Added clear training diagnostics for insufficient continuous mains history and stale data gaps.
+- Constrained appliance preview estimates to the available non-baseload power of each assigned mains feed.
+- Corrected all-mains visualization to sum differently paced mains sensors on a shared zero-order-hold grid.
+
 ## 1.1.9
 
 - Added support for configuring multiple mains power sensors and assigning appliance models to the correct mains source.
