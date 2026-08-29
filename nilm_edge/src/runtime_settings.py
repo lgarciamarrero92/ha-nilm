@@ -1,4 +1,6 @@
-DEFAULT_SENSOR_MAX_GAP_S = 60.0
+# Default is 5× the typical 60 s sensor poll interval so that minor asyncio
+# scheduling jitter or a single missed poll does not reset the ring buffer.
+DEFAULT_SENSOR_MAX_GAP_S = 300.0
 MIN_SENSOR_MAX_GAP_S = 1.0
 MAX_SENSOR_MAX_GAP_S = 3600.0
 
