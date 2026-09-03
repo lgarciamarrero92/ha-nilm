@@ -2,8 +2,8 @@ name: "NILM Training Server"
 slug: nilm_training_server
 description: "Training server for NILM"
 url: "https://ha-nilm.bigwicho.com/"
-version: "1.0.4.1"
-#image: "ghcr.io/lgarciamarrero92/ha-nilm-trainer"
+version: "1.0.5"
+image: "ghcr.io/lgarciamarrero92/ha-nilm-trainer"
 
 arch:
   - amd64
