@@ -8,31 +8,39 @@ import tensorflow as tf
 
 
 def _infer_output_indices(head: tf.keras.Model) -> Tuple[Optional[int], int]:
+    """Resolve output roles without mistaking 'regression' for an ON output.
+
+    Unnamed legacy heads retain the power-first, classification-second convention.
+    Named heads must identify distinct, unambiguous outputs.
+    """
     out_names = [getattr(o, "name", "").lower() for o in head.outputs]
+    if not out_names:
+        raise RuntimeError("Head model has no outputs.")
+    if len(out_names) > 2:
+        raise RuntimeError("Expected one classification output or two power/classification outputs.")
 
-    cls_idx = next(
-        (i for i, n in enumerate(out_names) if ("on" in n or "class" in n or "sigmoid" in n)),
-        None,
-    )
-    reg_idx = next(
-        (i for i, n in enumerate(out_names) if ("reg" in n or "power" in n or "mse" in n)),
-        None,
-    )
+    # Match name components: the substring 'on' also occurs in 'regression'.
+    components = [set(n.replace("/", "_").replace(":", "_").split("_")) for n in out_names]
+    cls_matches = [i for i, parts in enumerate(components)
+                   if parts & {"on", "onoff", "classification", "class", "sigmoid"}]
+    reg_matches = [i for i, parts in enumerate(components)
+                   if parts & {"power", "regression", "reg", "mse"}]
+    if len(cls_matches) > 1 or len(reg_matches) > 1:
+        raise RuntimeError(f"Ambiguous head output names: {out_names}")
+    if len(out_names) == 1:
+        if reg_matches:
+            raise RuntimeError("A single-output head must expose classification, not power.")
+        return None, 0
 
+    cls_idx = cls_matches[0] if cls_matches else None
+    reg_idx = reg_matches[0] if reg_matches else None
     if cls_idx is None:
-        if len(head.outputs) == 1:
-            cls_idx = 0
-        elif len(head.outputs) >= 2:
-            cls_idx = 1
-        else:
-            raise RuntimeError("Head model has no outputs.")
-
-    if len(head.outputs) == 1:
-        reg_idx = None
-    elif reg_idx is None:
-        reg_idx = 0 if cls_idx != 0 else (1 if len(head.outputs) > 1 else None)
-
-    return reg_idx, int(cls_idx)
+        cls_idx = 1 - reg_idx if reg_idx is not None else 1
+    if reg_idx is None:
+        reg_idx = 1 - cls_idx
+    if reg_idx == cls_idx:
+        raise RuntimeError(f"Power and classification must use distinct head outputs: {out_names}")
+    return reg_idx, cls_idx
 
 
 def _to_probability(x: np.ndarray) -> np.ndarray:
