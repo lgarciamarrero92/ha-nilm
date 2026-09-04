@@ -548,10 +548,13 @@ class RefQueryDisaggregator:
                 j += 1
             self.window.push(float(last_val))
 
-        # Set schedule for subsequent live updates
-        self.last_raw_t = clean[-1][0]
+        # Anchor to now so that the first live _emit_model_samples call sees
+        # gap ≈ 0 and does not trigger a max_gap reset that would undo the
+        # warm start. Using clean[-1][0] (the last history timestamp) would
+        # cause gap = now - history_ts >> max_gap_s on the very next call.
+        self.last_raw_t = now_epoch
         self.last_raw_y = clean[-1][1]
-        self.next_model_t = grid[-1] + dt
+        self.next_model_t = now_epoch + dt
 
         # Mark that we have attempted warm start successfully (window full now)
         self._warm_attempted = True
