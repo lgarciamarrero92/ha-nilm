@@ -1,20 +1,56 @@
-/* Home Assistant ingress shares its origin with the containing frontend.
- * Read the effective user theme, including HA's automatic mode. No API token
- * is needed, and a separately opened UI falls back to the system preference.
+/* Read the containing Home Assistant frontend's rendered theme. Ingress
+ * shares its origin, so this needs no credentials or backend theme settings.
+ * A separately opened UI follows the browser's color scheme.
  */
 (() => {
     const root = document.documentElement;
     const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
+
+    function renderedHomeAssistantDarkMode(frame) {
+        const parentDocument = frame.document;
+        const host = parentDocument.querySelector('home-assistant');
+        const styles = frame.getComputedStyle(parentDocument.documentElement);
+        const background = styles.getPropertyValue('--primary-background-color').trim();
+        // Ignore ordinary containing pages; these signals belong to HA.
+        if (!host && !background) return undefined;
+
+        const scheme = parentDocument.querySelector('meta[name="color-scheme"]')
+            ?.getAttribute('content')?.trim();
+        // HA updates this metadata with the effective default-theme mode.
+        if (scheme === 'dark') return true;
+        if (scheme === 'light') return false;
+
+        const darkMode = host?.hass?.themes?.darkMode;
+        if (typeof darkMode === 'boolean') return darkMode;
+
+        // HA also applies its theme to the document root. Read that rendered
+        // background when hass is absent (e.g. a different frontend layout).
+        // Older frontends may paint the body instead of the document root.
+        // Their resolved background variable still identifies the theme.
+        let rgb = (styles.backgroundColor || '').match(/^rgba?\(\s*(\d+)[, ]+\s*(\d+)[, ]+\s*(\d+)(?:\s*[,/]\s*([\d.]+))?\s*\)$/);
+        if (!rgb || Number(rgb[4]) === 0) {
+            const hex = background.match(/^#([\da-f]{3}|[\da-f]{6})$/i);
+            if (hex) {
+                const value = hex[1].length === 3 ? [...hex[1]].map(digit => digit + digit).join('') : hex[1];
+                rgb = ['', ...value.match(/../g).map(channel => parseInt(channel, 16))];
+            } else {
+                rgb = background.match(/^rgb\(\s*(\d+)[, ]+\s*(\d+)[, ]+\s*(\d+)\s*\)$/);
+            }
+        }
+        if (background && rgb && (rgb[4] === undefined || Number(rgb[4]) > 0)) {
+            const brightness = 0.2126 * Number(rgb[1]) + 0.7152 * Number(rgb[2]) + 0.0722 * Number(rgb[3]);
+            return brightness < 128;
+        }
+        return undefined;
+    }
 
     function homeAssistantDarkMode() {
         let frame = window;
         while (frame.parent !== frame) {
             try {
                 frame = frame.parent;
-                const hass = frame.document.querySelector('home-assistant')?.hass;
-                if (typeof hass?.themes?.darkMode === 'boolean') {
-                    return hass.themes.darkMode;
-                }
+                const darkMode = renderedHomeAssistantDarkMode(frame);
+                if (typeof darkMode === 'boolean') return darkMode;
             } catch (_) {
                 // Cross-origin embeddings cannot expose their user settings.
                 break;
@@ -35,8 +71,8 @@
 
     syncTheme();
     systemTheme.addEventListener('change', syncTheme);
-    // HA replaces hass as settings change, without a DOM mutation or a theme
-    // property in the ingress postMessage protocol. Poll only the small flag.
+    // The ingress properties protocol does not include theme changes. Poll
+    // the effective frontend theme, including after HA replaces its state.
     let timer = window.setInterval(syncTheme, 500);
     window.addEventListener('pagehide', () => window.clearInterval(timer));
     window.addEventListener('pageshow', (event) => {

@@ -3,6 +3,7 @@
 ## 1.1.10
 
 - Added automatic light and dark mode synchronization with Home Assistant for the dashboard and Training interface, including theme changes while the interface is open.
+- Fixed theme detection in Home Assistant ingress when the frontend theme state is not exposed to the embedded interface.
 - Adapted forms, model cards, status messages, dialogs, charts, and date pickers for dark mode, with system color preference support when the interface is opened directly.
 - Increased the default `sensor_max_gap_s` from 60 to 300 seconds for mains sensors with slower update cadences.
 
