@@ -2,6 +2,7 @@
 
 ## 1.1.10
 
+- Fixed unreadable summary cards in the final training overview when dark mode is active.
 - Added automatic light and dark mode synchronization with Home Assistant for the dashboard and Training interface, including theme changes while the interface is open.
 - Fixed theme detection in Home Assistant ingress when the frontend theme state is not exposed to the embedded interface.
 - Prevented stale interface and theme files after updates by requiring browsers to revalidate application assets when the interface is loaded.

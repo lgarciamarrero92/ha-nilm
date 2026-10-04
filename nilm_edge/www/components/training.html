@@ -70,6 +70,19 @@
         color: var(--nilm-secondary, #475569);
     }
 
+    .training-overview-card {
+        background: rgba(var(--nilm-surface-rgb, 255, 255, 255), 0.9);
+    }
+
+    .training-overview-label,
+    .training-overview-help {
+        color: var(--nilm-muted, #64748b);
+    }
+
+    .training-overview-value {
+        color: var(--nilm-text, #1e293b);
+    }
+
     .field-label {
         display: block;
         color: var(--nilm-text, #334155);
@@ -1617,10 +1630,10 @@
 
         function renderTrainingOverviewItem(label, value, helpText = "") {
             return `
-                <div class="rounded-2xl border border-slate-200 bg-white/90 px-4 py-4 shadow-sm">
-                    <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">${label}</div>
-                    <div class="mt-2 text-base font-semibold leading-snug text-slate-800">${value}</div>
-                    ${helpText ? `<div class="text-xs text-slate-500 mt-2">${helpText}</div>` : ""}
+                <div class="training-overview-card rounded-2xl border border-slate-200 px-4 py-4 shadow-sm">
+                    <div class="training-overview-label text-xs font-semibold uppercase tracking-[0.16em]">${label}</div>
+                    <div class="training-overview-value mt-2 text-base font-semibold leading-snug">${value}</div>
+                    ${helpText ? `<div class="training-overview-help text-xs mt-2">${helpText}</div>` : ""}
                 </div>
             `;
         }
