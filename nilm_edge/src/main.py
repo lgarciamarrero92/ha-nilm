@@ -249,6 +249,7 @@ def build_web_app():
 
     app.router.add_static(app_state.INGRESS_URL_BASE + "components/", path="/app/www/components")
     app.router.add_static(app_state.INGRESS_URL_BASE + "js/", path="/app/www/js")
+    app.router.add_static(app_state.INGRESS_URL_BASE + "css/", path="/app/www/css")
     app.router.add_static(app_state.INGRESS_URL_BASE + "vendor/", path="/app/www/vendor")
     app.router.add_get(
         app_state.INGRESS_URL_BASE + "icon.png",

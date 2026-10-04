@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.10
+
+- Added automatic light and dark mode synchronization with Home Assistant for the dashboard and Training interface, including theme changes while the interface is open.
+- Adapted forms, model cards, status messages, dialogs, charts, and date pickers for dark mode, with system color preference support when the interface is opened directly.
+- Increased the default `sensor_max_gap_s` from 60 to 300 seconds for mains sensors with slower update cadences.
+
 ## 1.1.9
 
 - Added support for configuring multiple mains power sensors and assigning each appliance model to the correct mains source.

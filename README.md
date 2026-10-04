@@ -202,6 +202,7 @@ Home Assistant Container installs use the long-lived access token shown in the c
 Notes:
 - Training range is limited to the previous 7 days.
 - Live entities update approximately every 8 seconds.
+- The dashboard and Training interface automatically follow Home Assistant's light/dark mode when opened through ingress, including changes while the interface is open. When opened directly (or embedded across origins), they follow the browser's system color preference.
 
 ## Multiple Phase
 

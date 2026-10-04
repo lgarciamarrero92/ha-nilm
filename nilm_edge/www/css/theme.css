@@ -1,0 +1,61 @@
+/* Light mode keeps the existing component colors through variable fallbacks. */
+:root { color-scheme: light; }
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --nilm-background: #111827;
+    --nilm-surface: #1e293b;
+    --nilm-raised: #273449;
+    --nilm-border: #475569;
+    --nilm-text: #f1f5f9;
+    --nilm-secondary: #cbd5e1;
+    --nilm-muted: #a8b5c7;
+    --nilm-info-text: #93c5fd;
+    --nilm-info-surface: #19344d;
+    --nilm-success-text: #86efac;
+    --nilm-success-surface: #173c30;
+    --nilm-warning-text: #fcd34d;
+    --nilm-warning-surface: #44351b;
+    --nilm-error-text: #fca5a5;
+    --nilm-error-surface: #47252d;
+    --nilm-surface-rgb: 30, 41, 59;
+    --nilm-background-rgb: 17, 24, 39;
+    --nilm-raised-rgb: 39, 52, 73;
+    --nilm-info-rgb: 25, 52, 77;
+    --nilm-success-rgb: 23, 60, 48;
+}
+
+/* Utilities also occur in dynamically rendered jobs and validation messages. */
+[data-theme="dark"] .bg-white { background-color: var(--nilm-surface); }
+[data-theme="dark"] .bg-gray-100 { background-color: var(--nilm-background); }
+[data-theme="dark"] .bg-gray-200 { background-color: var(--nilm-raised); }
+[data-theme="dark"] .hover\:bg-gray-300:hover { background-color: #334155; }
+[data-theme="dark"] :is(.text-gray-800, .text-gray-900, .text-slate-800, .text-slate-900) { color: var(--nilm-text); }
+[data-theme="dark"] :is(.text-gray-600, .text-gray-700, .text-slate-600) { color: var(--nilm-secondary); }
+[data-theme="dark"] :is(.text-gray-500, .text-slate-500) { color: var(--nilm-muted); }
+[data-theme="dark"] :is(.text-red-500, .text-red-600, .text-red-700, .hover\:text-red-800:hover) { color: var(--nilm-error-text); }
+[data-theme="dark"] .text-green-600 { color: var(--nilm-success-text); }
+[data-theme="dark"] .text-blue-800 { color: var(--nilm-info-text); }
+[data-theme="dark"] :is(.border-b, .border-slate-200) { border-color: var(--nilm-border); }
+[data-theme="dark"] input::placeholder { color: var(--nilm-muted); }
+[data-theme="dark"] input[type="checkbox"] { accent-color: #38bdf8; }
+
+/* Flatpickr is appended to the document body, outside either component. */
+[data-theme="dark"] .flatpickr-calendar {
+    background: var(--nilm-surface);
+    color: var(--nilm-text);
+    box-shadow: 0 8px 28px #0006;
+    border: 1px solid var(--nilm-border);
+}
+[data-theme="dark"] :is(.flatpickr-months .flatpickr-month, .flatpickr-current-month .flatpickr-monthDropdown-months, .flatpickr-monthDropdown-month, span.flatpickr-weekday, .flatpickr-day, .flatpickr-time input, .flatpickr-time .flatpickr-am-pm, .flatpickr-time .flatpickr-time-separator) {
+    background: transparent;
+    color: var(--nilm-text);
+}
+[data-theme="dark"] :is(.flatpickr-prev-month, .flatpickr-next-month) svg { fill: var(--nilm-text); }
+[data-theme="dark"] :is(.flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay, .flatpickr-day.flatpickr-disabled) { color: var(--nilm-muted); }
+[data-theme="dark"] :is(.flatpickr-day:hover, .flatpickr-time input:hover, .flatpickr-time input:focus, .flatpickr-time .flatpickr-am-pm:hover) { background: var(--nilm-raised); border-color: var(--nilm-border); }
+[data-theme="dark"] .flatpickr-day.selected { background: #0284c7; color: #fff; border-color: #0284c7; }
+[data-theme="dark"] .flatpickr-time { border-top-color: var(--nilm-border); }
+[data-theme="dark"] .flatpickr-calendar::before { border-bottom-color: var(--nilm-border); }
+[data-theme="dark"] .flatpickr-calendar::after { border-bottom-color: var(--nilm-surface); }
+[data-theme="dark"] .numInputWrapper span.arrowUp::after { border-bottom-color: var(--nilm-secondary); }
+[data-theme="dark"] .numInputWrapper span.arrowDown::after { border-top-color: var(--nilm-secondary); }
