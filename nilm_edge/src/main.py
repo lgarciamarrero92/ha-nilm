@@ -226,8 +226,18 @@ async def retry_websocket_connection(url, max_retries=10, initial_delay=1):
     raise ConnectionRefusedError(f"Failed to establish WebSocket connection to {url} after {max_retries} attempts.")
 
 
+async def revalidate_frontend_assets(request, response):
+    relative_path = request.path.removeprefix(app_state.INGRESS_URL_BASE)
+    is_index = request.path.rstrip("/") == app_state.INGRESS_URL_BASE.rstrip("/")
+    if is_index or relative_path.startswith(("js/", "css/", "components/")):
+        # Keep ETag/Last-Modified support, but require the browser to check for
+        # updated application files on every load, including through HA ingress.
+        response.headers["Cache-Control"] = "no-cache, max-age=0, must-revalidate"
+
+
 def build_web_app():
     app = web.Application(client_max_size=50 * 1024**2)
+    app.on_response_prepare.append(revalidate_frontend_assets)
     app["training_server_manager"] = TrainingServerServiceManager(
         jobs_dir="/data/training_jobs",
         models_root=app_state.MODELS_ROOT,
