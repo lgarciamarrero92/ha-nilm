@@ -37,7 +37,6 @@ NILM provides estimation from aggregate mains data, not direct per-appliance mea
 Notes:
 - Training range is limited to the previous 7 days.
 - Better training quality comes from complete labeling of the chosen interval.
-- Live entities are updated approximately every 8 seconds.
 
 ## Multiple Phase
 
@@ -60,7 +59,6 @@ For each model enabled for live publishing:
 - Recorder history for the selected training period.
 - Either both NILM apps installed on Home Assistant, or `NILM` plus a reachable remote `nilm_trainer` server URL.
 - Around 4 GB RAM available for Home Assistant + NILM apps.
-- Mains updates in the order of seconds (1s, 3s, 5s, 10s typically work well).
 
 ## Full Documentation
 
