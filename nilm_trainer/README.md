@@ -11,6 +11,12 @@ This app receives prepared training jobs from `NILM`, runs appliance-model train
 - Tracks job progress and exposes job status through a simple HTTP API.
 - Returns the trained embedding, learned thresholds, and training metadata when a job finishes.
 
+## Help improve HA-NILM
+
+Does the disaggregation match what actually happened in your home? Your feedback helps improve HA-NILM. It takes just 1 minute.
+
+[Share feedback](https://ha-nilm.bigwicho.com/feedback?source=github)
+
 ## Documentation
 
 This README covers the essentials.

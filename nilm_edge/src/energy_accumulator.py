@@ -56,6 +56,7 @@ class EnergyAccumulator:
                         "total_kwh": total_kwh,
                         "previous_power_w": max(0.0, previous_power_w),
                         "previous_timestamp": previous_timestamp,
+                        "baseline_valid": value.get("baseline_valid", True),
                     }
         except FileNotFoundError:
             pass
@@ -79,6 +80,13 @@ class EnergyAccumulator:
             except OSError:
                 pass
 
+    def pause(self, appliance_key: str) -> None:
+        """Preserve the total, but do not integrate across missing predictions."""
+        entry = self._entries.get(appliance_key)
+        if entry is not None and entry.get("baseline_valid", True):
+            entry["baseline_valid"] = False
+            self._save()
+
     def update(self, appliance_key: str, power_w: float, timestamp_s: float) -> EnergyUpdate:
         """Record one published power reading and return the cumulative energy."""
         power_w = max(0.0, float(power_w))
@@ -96,6 +104,13 @@ class EnergyAccumulator:
             self._entries[appliance_key] = entry
             self._save()
             return EnergyUpdate(total_kwh=0.0, integration_gap_s=0.0, skipped_stale_gap=False)
+
+        if not entry.get("baseline_valid", True):
+            entry["previous_power_w"] = power_w
+            entry["previous_timestamp"] = timestamp_s
+            entry["baseline_valid"] = True
+            self._save()
+            return EnergyUpdate(float(entry["total_kwh"]), 0.0, True)
 
         elapsed_s = timestamp_s - float(entry["previous_timestamp"])
         if elapsed_s <= 0.0:

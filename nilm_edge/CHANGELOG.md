@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.10.1
+
+- Mark live appliance power, ON/OFF, and energy entities as `unavailable` when their assigned mains sensor reports `unknown` or `unavailable`. Resume publishing when a valid prediction becomes available.
+- Preserve cumulative energy during mains interruptions and skip integration across the interruption, including after an add-on restart.
+- Add a feedback link to the dashboard when disaggregation results are displayed, with matching links in the documentation.
+- Replace the repository README preview with an animated ON-Interval Supervision tutorial covering interval selection, disaggregation, and real-time publishing.
+
 ## 1.1.10
 
 - Added dark mode throughout the dashboard and Training interface, including forms, model cards, training summaries, dialogs, charts, and date pickers. The interface follows Home Assistant theme changes automatically and uses the system color preference when opened directly.

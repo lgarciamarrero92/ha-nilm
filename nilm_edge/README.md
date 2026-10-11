@@ -60,6 +60,12 @@ For each model enabled for live publishing:
 - Either both NILM apps installed on Home Assistant, or `NILM` plus a reachable remote `nilm_trainer` server URL.
 - Around 4 GB RAM available for Home Assistant + NILM apps.
 
+## Help improve HA-NILM
+
+Does the disaggregation match what actually happened in your home? Your feedback helps improve HA-NILM. It takes just 1 minute.
+
+[Share feedback](https://ha-nilm.bigwicho.com/feedback?source=github)
+
 ## Full Documentation
 
 This README only covers the essentials.

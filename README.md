@@ -14,8 +14,10 @@
 
 HA-NILM learns your appliance patterns during a short guided training phase, then uses them to estimate real-time appliance activity and energy usage from your whole-home power meter, locally in Home Assistant.
 
+<h2 align="center">🎬 See it in action (ON-Interval Supervision)</h2>
+
 <p align="center">
-  <img src="nilm_edge/www/ha-nilm.png" alt="NILM for Home Assistant interface preview" width="640">
+  <img src="nilm_edge/www/nilm-training.gif" alt="NILM appliance training: select ON intervals, review predictions, and enable real-time publishing" width="640">
 </p>
 
 This repository contains two NILM services that work together:
@@ -208,6 +210,12 @@ Notes:
 HA-NILM supports one or more mains power sensors, making it suitable for split-phase and multi-phase electrical supplies. Train each appliance model using the mains sensor that measures its circuit. In the NILM Dashboard, you can view each configured mains sensor separately or view their aggregate, calculated as the sum of all declared mains sensors.
 
 Each appliance model name must be unique within its model bundle, even when the appliances are connected to different mains sensors. Use descriptive names such as `fridge_kitchen` and `fridge_garage` rather than creating two models named `fridge`. Names that differ only by capitalization, spaces, or punctuation can resolve to the same internal name.
+
+## Help improve HA-NILM
+
+Does the disaggregation match what actually happened in your home? Your feedback helps improve HA-NILM. It takes just 1 minute.
+
+[Share feedback](https://ha-nilm.bigwicho.com/feedback?source=github)
 
 ## Documentation
 

@@ -270,6 +270,35 @@
         color: var(--nilm-text, #0f172a);
     }
 
+    .feedback-card {
+        margin-top: 16px;
+        padding: 16px;
+        border: 1px solid var(--nilm-border, #e2e8f0);
+        border-radius: 14px;
+        background: var(--nilm-background, #f8fafc);
+    }
+
+    .feedback-card[hidden] {
+        display: none;
+    }
+
+    .feedback-card p {
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    .feedback-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .feedback-actions a {
+        display: inline-block;
+        text-decoration: none;
+    }
+
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -1618,6 +1647,14 @@
                 </div>
             </div>
 
+            <section id="dashboardFeedback" class="feedback-card" aria-labelledby="dashboardFeedbackTitle" hidden>
+                <h2 id="dashboardFeedbackTitle">Help improve HA-NILM</h2>
+                <p>Does the disaggregation match what actually happened in your home? Your feedback helps improve HA-NILM. It takes just 1 minute.</p>
+                <div class="feedback-actions">
+                    <a id="dashboardFeedbackShare" class="action-btn action-primary" href="https://ha-nilm.bigwicho.com/feedback?source=ha" target="_blank" rel="noopener noreferrer">Share feedback</a>
+                </div>
+            </section>
+
             <div id="statusMessage" class="status-message"></div>
         </section>
 
@@ -1807,6 +1844,7 @@
     let chartLoadingText;
     let dashboardChartInfo;
     let signalPredictionPanel;
+    let dashboardFeedback;
     let signalPredictionMeta;
     let signalPredictionList;
     let signalPredictionShareWrap;
@@ -1922,6 +1960,13 @@
     const DASHBOARD_ENERGY_UNITS = new Set(["Wh", "kWh", "MWh", "GWh"]);
     const DASHBOARD_DISPLAY_SAMPLE_MS = 8000;
     const DASHBOARD_NEAR_ZERO_W = 20;
+    function renderDashboardFeedback() {
+        if (!dashboardFeedback) return;
+        dashboardFeedback.hidden = !activeInlinePredictions.some((prediction) =>
+            prediction.powerSeries?.length || prediction.stateSeries?.length
+        );
+    }
+
     function formatPower(value) {
         if (!Number.isFinite(value)) return "-";
         return `${Math.round(value)} W`;
@@ -2791,6 +2836,7 @@
     }
 
     function renderInlinePredictionUi() {
+        renderDashboardFeedback();
         if (!signalPredictionPanel || !signalPredictionMeta || !signalPredictionList) return;
 
         if (!activeInlinePredictions.length) {
@@ -4728,6 +4774,7 @@
         chartLoadingText = document.getElementById("chartLoadingText");
         dashboardChartInfo = document.getElementById("dashboardChartInfo");
         signalPredictionPanel = document.getElementById("signalPredictionPanel");
+        dashboardFeedback = document.getElementById("dashboardFeedback");
         signalPredictionMeta = document.getElementById("signalPredictionMeta");
         signalPredictionList = document.getElementById("signalPredictionList");
         signalPredictionShareWrap = document.getElementById("signalPredictionShareWrap");
@@ -5028,6 +5075,7 @@
     };
 
     window.cleanupDashboardUI = function() {
+        dashboardFeedback = null;
         if (previewAllEmbeddingsButton && previewAllEmbeddingsHandler) previewAllEmbeddingsButton.removeEventListener("click", previewAllEmbeddingsHandler);
         if (addMainsButton && addMainsButtonHandler) addMainsButton.removeEventListener("click", addMainsButtonHandler);
         if (mainsEmptyHintAddButton && mainsEmptyHintAddButtonHandler) mainsEmptyHintAddButton.removeEventListener("click", mainsEmptyHintAddButtonHandler);

@@ -90,9 +90,10 @@ async def publish_disaggregation_dl(
     publish_tasks = []
 
     for appliance_name, values in appliances.items():
+        unavailable = values.get("unavailable", False)
         try:
-            power = float(values.get("power"))
-            onoff = float(values.get("onoff"))
+            power = 0.0 if unavailable else float(values.get("power"))
+            onoff = 0.0 if unavailable else float(values.get("onoff"))
         except Exception:
             continue
         try:
@@ -122,13 +123,16 @@ async def publish_disaggregation_dl(
         # Keep this distinct from the common user-created integral helper name
         # (sensor.nilm_<appliance>_energy) so upgrades cannot overwrite it.
         energy_entity_id = f"sensor.nilm_{slug}_energy_consumed"
-        energy_update = energy_accumulator.update(
-            appliance_key=energy_entity_id,
-            power_w=power,
-            timestamp_s=timestamp.timestamp(),
-        )
+        if unavailable:
+            energy_accumulator.pause(energy_entity_id)
+        else:
+            energy_update = energy_accumulator.update(
+                appliance_key=energy_entity_id,
+                power_w=power,
+                timestamp_s=timestamp.timestamp(),
+            )
         power_data = {
-            "state": round(power, 1),
+            "state": "unavailable" if unavailable else round(power, 1),
             "attributes": {
                 "unit_of_measurement": "W",
                 "device_class": "power",
@@ -143,14 +147,14 @@ async def publish_disaggregation_dl(
                 "bundle_id": bundle_id or None,
                 "icon": "mdi:power-socket-eu",
                 "source": "dl",
-                "onoff_score": round(onoff, 4),
+                "onoff_score": None if unavailable else round(onoff, 4),
                 "onoff_threshold": round(onoff_threshold, 4),
             },
         }
         publish_tasks.append(post_state(power_entity_id, power_data))
 
         energy_data = {
-            "state": round(energy_update.total_kwh, 6),
+            "state": "unavailable" if unavailable else round(energy_update.total_kwh, 6),
             "attributes": {
                 "unit_of_measurement": "kWh",
                 "device_class": "energy",
@@ -159,8 +163,8 @@ async def publish_disaggregation_dl(
                 "last_updated": timestamp.isoformat(),
                 "source": "dl",
                 "integration_method": "trapezoidal",
-                "integration_gap_s": round(energy_update.integration_gap_s, 3),
-                "skipped_stale_gap": energy_update.skipped_stale_gap,
+                "integration_gap_s": None if unavailable else round(energy_update.integration_gap_s, 3),
+                "skipped_stale_gap": True if unavailable else energy_update.skipped_stale_gap,
                 "icon": "mdi:lightning-bolt",
             },
         }
@@ -169,7 +173,7 @@ async def publish_disaggregation_dl(
         is_on = onoff >= onoff_threshold
         on_entity_id = f"binary_sensor.nilm_{slug}_on"
         on_data = {
-            "state": "on" if is_on else "off",
+            "state": "unavailable" if unavailable else ("on" if is_on else "off"),
             "attributes": {
                 "friendly_name": f"NILM {display_name.replace('_', ' ').title()} On/Off{bundle_label}",
                 "last_updated": timestamp.isoformat(),
@@ -181,7 +185,7 @@ async def publish_disaggregation_dl(
                 "bundle_id": bundle_id or None,
                 "icon": "mdi:toggle-switch" if is_on else "mdi:toggle-switch-off",
                 "source": "dl",
-                "onoff_score": round(onoff, 4),
+                "onoff_score": None if unavailable else round(onoff, 4),
                 "onoff_threshold": round(onoff_threshold, 4),
             },
         }
@@ -338,6 +342,24 @@ async def run_live_loop(session: aiohttp.ClientSession):
                     new_state = event.get("event", {}).get("data", {}).get("new_state")
                     event_entity_id = new_state.get("entity_id") if new_state else None
                     if not new_state or event_entity_id not in sensors_to_monitor:
+                        continue
+
+                    if new_state.get("state") in ("unknown", "unavailable"):
+                        runtime = app_state.refquery_instance
+                        if runtime:
+                            appliances = {}
+                            for bundle_id, names in runtime.enabled_appliances_by_mains_bundle.get(event_entity_id, {}).items():
+                                for name in names:
+                                    appliances[f"{bundle_id}/{name}"] = {
+                                        "appliance_name": name,
+                                        "bundle_id": bundle_id,
+                                        "unavailable": True,
+                                    }
+                            for model_runtime in runtime.runtimes.get(event_entity_id, {}).values():
+                                model_runtime.reset()
+                            await publish_disaggregation_dl(
+                                0.0, {"appliances": appliances}, datetime.now(timezone.utc), session,
+                            )
                         continue
 
                     sensor_unit = (
