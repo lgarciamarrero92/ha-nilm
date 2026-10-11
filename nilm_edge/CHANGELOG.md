@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.10.1
+## 1.1.11
 
 - Mark live appliance power, ON/OFF, and energy entities as `unavailable` when their assigned mains sensor reports `unknown` or `unavailable`. Resume publishing when a valid prediction becomes available.
 - Preserve cumulative energy during mains interruptions and skip integration across the interruption, including after an add-on restart.
