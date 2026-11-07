@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import ctypes
+import gc
 import gzip
 import json
 import os
@@ -11,7 +13,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import yaml
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
@@ -354,8 +356,31 @@ async def train_status(job_id: str):
     }
 
 
+def _release_process_memory() -> None:
+    gc.collect()
+    try:
+        libc = ctypes.CDLL("libc.so.6")
+        malloc_trim = libc.malloc_trim
+    except (OSError, AttributeError):
+        return
+    malloc_trim.argtypes = [ctypes.c_size_t]
+    malloc_trim.restype = ctypes.c_int
+    malloc_trim(0)
+
+
+async def _release_memory_after_result(job_id: str) -> None:
+    async with JOBS_LOCK:
+        job = JOBS[job_id]
+        if job.get("memory_cleanup_done"):
+            return
+        if any(other["status"] in ("queued", "running") for other in JOBS.values()):
+            return
+        await asyncio.to_thread(_release_process_memory)
+        job["memory_cleanup_done"] = True
+
+
 @app.get("/train/{job_id}/result", status_code=200)
-async def train_result(job_id: str):
+async def train_result(job_id: str, background_tasks: BackgroundTasks):
     async with JOBS_LOCK:
         job = JOBS.get(job_id)
     if not job:
@@ -366,6 +391,7 @@ async def train_result(job_id: str):
     if job["status"] != "done":
         raise HTTPException(409, f"not ready ({job['status']})")
 
+    background_tasks.add_task(_release_memory_after_result, job_id)
     return {
         "status": "success",
         "job_id": job_id,
