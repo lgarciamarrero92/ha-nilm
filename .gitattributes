@@ -1,0 +1,4 @@
+# HTML is part of the user interface,
+# but excluded from language statistics
+# to emphasize the Python core.
+*.html -linguist-detectable
