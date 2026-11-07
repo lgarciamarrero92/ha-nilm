@@ -4,43 +4,39 @@ import time
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 import numpy as np
-import tensorflow as tf
+
+from app.shuffle import epoch_orders
 
 
-def _infer_output_indices(head: tf.keras.Model) -> Tuple[Optional[int], int]:
-    """Resolve output roles without mistaking 'regression' for an ON output.
+def loss_and_gradient(head, ref, query, onoff, power, losses, cls_weight=1.0, reg_weight=1.0):
+    predictions, cache = head.forward(ref, query)
+    cls_loss, cls_grad = losses["onoff"](onoff, predictions["onoff"])
+    output_gradients = {"onoff": cls_weight * cls_grad}
+    reg_loss = 0.0
+    if power is not None:
+        if "power" not in predictions:
+            raise RuntimeError("Head model does not expose a regression output for power-based fine-tuning.")
+        reg_loss, reg_grad = losses["power"](power, predictions["power"])
+        output_gradients["power"] = reg_weight * reg_grad
+    gradient = head.backward(cache, output_gradients)
+    return cls_weight * cls_loss + reg_weight * reg_loss, cls_loss, reg_loss, gradient
 
-    Unnamed legacy heads retain the power-first, classification-second convention.
-    Named heads must identify distinct, unambiguous outputs.
-    """
-    out_names = [getattr(o, "name", "").lower() for o in head.outputs]
-    if not out_names:
-        raise RuntimeError("Head model has no outputs.")
-    if len(out_names) > 2:
-        raise RuntimeError("Expected one classification output or two power/classification outputs.")
 
-    # Match name components: the substring 'on' also occurs in 'regression'.
-    components = [set(n.replace("/", "_").replace(":", "_").split("_")) for n in out_names]
-    cls_matches = [i for i, parts in enumerate(components)
-                   if parts & {"on", "onoff", "classification", "class", "sigmoid"}]
-    reg_matches = [i for i, parts in enumerate(components)
-                   if parts & {"power", "regression", "reg", "mse"}]
-    if len(cls_matches) > 1 or len(reg_matches) > 1:
-        raise RuntimeError(f"Ambiguous head output names: {out_names}")
-    if len(out_names) == 1:
-        if reg_matches:
-            raise RuntimeError("A single-output head must expose classification, not power.")
-        return None, 0
+class Adam:
+    def __init__(self, ref, lr):
+        self.lr = np.float32(lr)
+        self.momentum = np.zeros_like(ref)
+        self.velocity = np.zeros_like(ref)
+        self.step = 0
 
-    cls_idx = cls_matches[0] if cls_matches else None
-    reg_idx = reg_matches[0] if reg_matches else None
-    if cls_idx is None:
-        cls_idx = 1 - reg_idx if reg_idx is not None else 1
-    if reg_idx is None:
-        reg_idx = 1 - cls_idx
-    if reg_idx == cls_idx:
-        raise RuntimeError(f"Power and classification must use distinct head outputs: {out_names}")
-    return reg_idx, cls_idx
+    def update(self, ref, gradient):
+        self.step += 1
+        self.momentum += (gradient - self.momentum) * 0.1
+        self.velocity += (gradient**2 - self.velocity) * 0.001
+        beta1_power = np.float32(0.9) ** np.float32(self.step)
+        beta2_power = np.float32(0.999) ** np.float32(self.step)
+        rate = self.lr * np.sqrt(1.0 - beta2_power) / (1.0 - beta1_power)
+        ref -= rate * self.momentum / (np.sqrt(self.velocity) + 1e-7)
 
 
 def _to_probability(x: np.ndarray) -> np.ndarray:
@@ -214,7 +210,8 @@ def train_ref_embedding(
     targets_power: Optional[list[float]],
     weak_mains: Optional[list[float]],
     settings: Dict[str, Any],
-    head_model_path: str,
+    load_head: Callable,
+    losses,
     epochs: int = 200,
     lr: float = 0.01,
     batch_size: int = 1024,
@@ -224,8 +221,7 @@ def train_ref_embedding(
     on_progress: Optional[Callable[[Dict[str, Any]], None]] = None,
     progress_every_s: float = 1.0,
 ) -> Tuple[list[float], Dict[str, Any], Dict[str, float]]:
-    tf.random.set_seed(seed)
-    np.random.seed(seed)
+    rng = np.random.RandomState(seed)
 
     Q_np = np.asarray(query_embeddings, dtype=np.float32)
     if Q_np.ndim != 2 or Q_np.size == 0:
@@ -253,30 +249,23 @@ def train_ref_embedding(
     N = int(Q_np.shape[0])
     D = int(Q_np.shape[1])
 
-    head = tf.keras.models.load_model(head_model_path, compile=False)
-    head.trainable = False
-    if len(head.inputs) != 2:
-        raise RuntimeError("Expected head with 2 inputs (ref, query).")
+    head = load_head()
+    if D != head.embedding_dim:
+        raise ValueError(f"Expected {head.embedding_dim} embedding values, received {D}.")
+    # A head can cache its fixed query work as long as the result supports row indexing.
+    prepare_queries = getattr(head, "prepare_queries", None)
+    head_queries = prepare_queries(Q_np) if prepare_queries is not None else Q_np
 
     weak_reg_loss_weight = float(settings.get("weak_reg_loss_weight", 1.0))
     onoff_loss_weight = float(settings.get("onoff_loss_weight", 1.0))
-    reg_idx, onoff_idx = _infer_output_indices(head)
-    if fine_tune_target in ("power", "weak_onoff") and reg_idx is None:
-        raise RuntimeError("Head model does not expose a regression output for power-based fine-tuning.")
 
-    bce_loss_fn = tf.keras.losses.BinaryCrossentropy(from_logits=False)
-    mse_loss_fn = tf.keras.losses.MeanSquaredError()
-
-    Q_tf = tf.convert_to_tensor(Q_np, dtype=tf.float32)
-    y_on_tf = tf.convert_to_tensor(y_on_np, dtype=tf.float32)
-    y_power_tf = tf.convert_to_tensor(y_power_norm_np, dtype=tf.float32) if y_power_norm_np is not None else None
-
-    def _evaluate_current_ref(ref_value: np.ndarray) -> list[np.ndarray]:
-        ref_batch = np.repeat(np.asarray(ref_value, dtype=np.float32).reshape(1, -1), N, axis=0).astype(np.float32)
-        outputs = head.predict([ref_batch, Q_np], batch_size=batch_size, verbose=0)
-        if not isinstance(outputs, (list, tuple)):
-            outputs = [outputs]
-        return [np.asarray(o, dtype=np.float32) for o in outputs]
+    def _evaluate_current_ref(ref_value: np.ndarray) -> Dict[str, np.ndarray]:
+        outputs = {}
+        for start in range(0, N, batch_size):
+            predictions, _ = head.forward(ref_value, head_queries[start:start + batch_size])
+            for name, values in predictions.items():
+                outputs.setdefault(name, []).append(values)
+        return {name: np.concatenate(batches) for name, batches in outputs.items()}
 
     def _run_stage(
         *,
@@ -285,59 +274,12 @@ def train_ref_embedding(
         mode: str,
         aux_target: Optional[np.ndarray] = None,
         stage_epochs: int = epochs,
-    ) -> Tuple[np.ndarray, Dict[str, Any], list[np.ndarray]]:
-        ref_emb = tf.Variable(np.asarray(init_ref_value, dtype=np.float32).reshape(1, D), trainable=True, name=f"ref_embedding_{stage_name}")
-        stage_optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
-        steps_per_epoch = int((N + batch_size - 1) // batch_size)
-
-        if aux_target is not None:
-            ds = tf.data.Dataset.from_tensor_slices((Q_tf, y_on_tf, tf.convert_to_tensor(aux_target, dtype=tf.float32)))
-        else:
-            ds = tf.data.Dataset.from_tensor_slices((Q_tf, y_on_tf))
-        ds = ds.shuffle(min(10_000, N), seed=seed, reshuffle_each_iteration=True)
-        ds = ds.batch(batch_size, drop_remainder=False).prefetch(tf.data.AUTOTUNE)
-
-        @tf.function
-        def train_step_onoff(q_batch, y_on_batch):
-            with tf.GradientTape() as tape:
-                bsz = tf.shape(q_batch)[0]
-                ref_batch = tf.broadcast_to(ref_emb, (bsz, D))
-                outputs = head([ref_batch, q_batch], training=False)
-                pred_on = tf.reshape(outputs[onoff_idx], (-1,))
-                cls_loss = bce_loss_fn(y_on_batch, pred_on)
-            grads = tape.gradient(cls_loss, [ref_emb])
-            stage_optimizer.apply_gradients(zip(grads, [ref_emb]))
-            return cls_loss, cls_loss, tf.constant(0.0, dtype=tf.float32)
-
-        @tf.function
-        def train_step_power(q_batch, y_on_batch, y_power_batch):
-            with tf.GradientTape() as tape:
-                bsz = tf.shape(q_batch)[0]
-                ref_batch = tf.broadcast_to(ref_emb, (bsz, D))
-                outputs = head([ref_batch, q_batch], training=False)
-                pred_reg = tf.reshape(outputs[reg_idx], (-1,))
-                pred_on = tf.reshape(outputs[onoff_idx], (-1,))
-                reg_loss = mse_loss_fn(y_power_batch, pred_reg)
-                cls_loss = bce_loss_fn(y_on_batch, pred_on)
-                total_loss = reg_loss + cls_loss
-            grads = tape.gradient(total_loss, [ref_emb])
-            stage_optimizer.apply_gradients(zip(grads, [ref_emb]))
-            return total_loss, cls_loss, reg_loss
-
-        @tf.function
-        def train_step_weak(q_batch, y_on_batch, y_weak_batch):
-            with tf.GradientTape() as tape:
-                bsz = tf.shape(q_batch)[0]
-                ref_batch = tf.broadcast_to(ref_emb, (bsz, D))
-                outputs = head([ref_batch, q_batch], training=False)
-                pred_reg = tf.reshape(outputs[reg_idx], (-1,))
-                pred_on = tf.reshape(outputs[onoff_idx], (-1,))
-                reg_loss = mse_loss_fn(y_weak_batch, pred_reg)
-                cls_loss = bce_loss_fn(y_on_batch, pred_on)
-                total_loss = (weak_reg_loss_weight * reg_loss) + (onoff_loss_weight * cls_loss)
-            grads = tape.gradient(total_loss, [ref_emb])
-            stage_optimizer.apply_gradients(zip(grads, [ref_emb]))
-            return total_loss, cls_loss, reg_loss
+    ) -> Tuple[np.ndarray, Dict[str, Any], Dict[str, np.ndarray]]:
+        ref_emb = init_ref_value.reshape(1, D).copy()
+        optimizer = Adam(ref_emb, lr)
+        steps_per_epoch = (N + batch_size - 1) // batch_size
+        cls_weight = onoff_loss_weight if mode == "weak_onoff" else 1.0
+        reg_weight = weak_reg_loss_weight if mode == "weak_onoff" else 1.0
 
         total_losses: list[float] = []
         cls_losses: list[float] = []
@@ -347,29 +289,21 @@ def train_ref_embedding(
         best_ref_emb = None
         last_emit = 0.0
 
-        for epoch in range(stage_epochs):
+        for epoch, indices in enumerate(epoch_orders(N, seed, stage_epochs)):
             total_sum = 0.0
             cls_sum = 0.0
             reg_sum = 0.0
             step = 0
 
-            for batch in ds:
+            for start in range(0, N, batch_size):
                 step += 1
-                if mode == "onoff":
-                    q_batch, y_on_batch = batch
-                    total_t, cls_t, reg_t = train_step_onoff(q_batch, y_on_batch)
-                elif mode == "power":
-                    q_batch, y_on_batch, y_power_batch = batch
-                    total_t, cls_t, reg_t = train_step_power(q_batch, y_on_batch, y_power_batch)
-                elif mode == "weak_onoff":
-                    q_batch, y_on_batch, y_weak_batch = batch
-                    total_t, cls_t, reg_t = train_step_weak(q_batch, y_on_batch, y_weak_batch)
-                else:
-                    raise ValueError(f"Unknown stage mode: {mode}")
-
-                total_v = float(total_t.numpy())
-                cls_v = float(cls_t.numpy())
-                reg_v = float(reg_t.numpy())
+                batch = indices[start:start + batch_size]
+                power = aux_target[batch] if aux_target is not None else None
+                total_v, cls_v, reg_v, gradient = loss_and_gradient(
+                    head, ref_emb, head_queries[batch], y_on_np[batch], power,
+                    losses, cls_weight, reg_weight,
+                )
+                optimizer.update(ref_emb, gradient)
                 total_sum += total_v
                 cls_sum += cls_v
                 reg_sum += reg_v
@@ -426,11 +360,11 @@ def train_ref_embedding(
             if epoch_total + min_delta < best_total:
                 best_total = epoch_total
                 best_epoch = epoch
-                best_ref_emb = ref_emb.numpy().copy()
+                best_ref_emb = ref_emb.copy()
             elif patience > 0 and (epoch - best_epoch) >= patience:
                 break
 
-        final_ref_emb = (best_ref_emb if best_ref_emb is not None else ref_emb.numpy()).reshape(-1).astype(np.float32)
+        final_ref_emb = (best_ref_emb if best_ref_emb is not None else ref_emb).reshape(-1).astype(np.float32)
         outputs = _evaluate_current_ref(final_ref_emb)
         stats = {
             "epochs_requested": int(stage_epochs),
@@ -453,14 +387,14 @@ def train_ref_embedding(
         return final_ref_emb, stats, outputs
 
     if fine_tune_target == "weak_onoff":
-        stage1_init = np.random.normal(loc=0.0, scale=0.05, size=(D,)).astype(np.float32)
+        stage1_init = rng.normal(loc=0.0, scale=0.05, size=(D,)).astype(np.float32)
         stage1_emb, stage1_stats, stage1_outputs = _run_stage(
             stage_name="weak_stage1",
             init_ref_value=stage1_init,
             mode="onoff",
             stage_epochs=epochs,
         )
-        cls_scores = _to_probability(np.asarray(stage1_outputs[onoff_idx], dtype=np.float32).reshape(-1))
+        cls_scores = _to_probability(np.asarray(stage1_outputs["onoff"], dtype=np.float32).reshape(-1))
         conf_threshold = _quantile_threshold_from_scores(
             cls_scores,
             float(settings.get("weak_conf_quantile", 0.95)),
@@ -491,16 +425,16 @@ def train_ref_embedding(
         }
         final_outputs = stage2_outputs
     elif fine_tune_target == "power":
-        init_emb = np.random.normal(loc=0.0, scale=0.05, size=(D,)).astype(np.float32)
+        init_emb = rng.normal(loc=0.0, scale=0.05, size=(D,)).astype(np.float32)
         final_ref_emb, final_stats, final_outputs = _run_stage(
             stage_name="power",
             init_ref_value=init_emb,
             mode="power",
-            aux_target=y_power_tf.numpy() if y_power_tf is not None else None,
+            aux_target=y_power_norm_np,
             stage_epochs=epochs,
         )
     else:
-        init_emb = np.random.normal(loc=0.0, scale=0.05, size=(D,)).astype(np.float32)
+        init_emb = rng.normal(loc=0.0, scale=0.05, size=(D,)).astype(np.float32)
         final_ref_emb, final_stats, final_outputs = _run_stage(
             stage_name="onoff",
             init_ref_value=init_emb,
@@ -508,7 +442,7 @@ def train_ref_embedding(
             stage_epochs=epochs,
         )
 
-    onoff_prob = _to_probability(np.asarray(final_outputs[onoff_idx], dtype=np.float32).reshape(-1))
+    onoff_prob = _to_probability(np.asarray(final_outputs["onoff"], dtype=np.float32).reshape(-1))
     onoff_threshold, onoff_f1 = _best_prob_threshold(np.asarray(targets_on, dtype=np.int32), onoff_prob)
 
     appliance_params: Dict[str, float] = {
@@ -516,8 +450,8 @@ def train_ref_embedding(
     }
 
     power_f1 = None
-    if fine_tune_target == "power" and reg_idx is not None:
-        pred_power_norm = np.asarray(final_outputs[reg_idx], dtype=np.float32).reshape(-1)
+    if fine_tune_target == "power":
+        pred_power_norm = np.asarray(final_outputs["power"], dtype=np.float32).reshape(-1)
         pred_power_w = _denorm_power(pred_power_norm, settings)
         power_threshold, power_f1 = _best_power_threshold(np.asarray(targets_power, dtype=np.float32), pred_power_w)
         appliance_params["power_threshold"] = float(power_threshold)

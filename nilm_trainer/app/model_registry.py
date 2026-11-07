@@ -3,7 +3,15 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Optional, Tuple
+from functools import partial
+from typing import Callable, Dict, Iterable, List, Optional
+
+from app.heads.refquery_dense_v1 import Head as RefQueryDenseV1
+
+
+HEAD_IMPLEMENTATIONS = {
+    "refquery_dense_v1": RefQueryDenseV1,
+}
 
 
 @dataclass(frozen=True)
@@ -15,7 +23,7 @@ class ServerModelBundle:
     display_name: Optional[str]
     is_default_for_training: bool
     bundle_dir: str
-    head_model_path: str
+    load_head: Callable
 
     @property
     def label(self) -> str:
@@ -34,9 +42,12 @@ def _load_bundle(manifest_path: str) -> ServerModelBundle:
 
     mode = str(raw.get("mode") or "online").strip().lower()
     bundle_dir = os.path.dirname(manifest_path)
-    head_model_path = os.path.join(bundle_dir, "head.h5")
-    if not os.path.exists(head_model_path):
-        raise FileNotFoundError(f"Missing head.h5 for server bundle {bundle_id}: {head_model_path}")
+    head_implementation = str(raw.get("head_implementation") or "").strip()
+    if head_implementation not in HEAD_IMPLEMENTATIONS:
+        raise ValueError(f"Unknown head_implementation {head_implementation!r} for server bundle {bundle_id}.")
+    weights_path = os.path.join(bundle_dir, "head.npz")
+    if not os.path.isfile(weights_path):
+        raise FileNotFoundError(f"Missing head.npz for server bundle {bundle_id}: {weights_path}")
 
     return ServerModelBundle(
         bundle_id=bundle_id,
@@ -46,7 +57,7 @@ def _load_bundle(manifest_path: str) -> ServerModelBundle:
         display_name=str(raw.get("display_name") or "").strip() or None,
         is_default_for_training=bool(raw.get("is_default_for_training", False)),
         bundle_dir=bundle_dir,
-        head_model_path=head_model_path,
+        load_head=partial(HEAD_IMPLEMENTATIONS[head_implementation], weights_path),
     )
 
 

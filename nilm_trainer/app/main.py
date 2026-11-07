@@ -3,27 +3,35 @@ from __future__ import annotations
 import asyncio
 import gzip
 import json
-import time
-import uuid
-from typing import Any, Dict, List, Optional
 import os
 import tempfile
+import time
+import uuid
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
+import yaml
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
+from app.losses import resolve_losses
 from app.model_registry import discover_server_bundles, get_bundle_by_id, get_latest_bundle_for_mode
 from app.trainer import train_ref_embedding
 
-app = FastAPI()
+config_path = Path(__file__).resolve().parents[1] / "config.yaml"
+VERSION = "unknown"
+if config_path.is_file():
+    with config_path.open(encoding="utf-8") as config:
+        VERSION = str(yaml.safe_load(config)["version"])
+
+app = FastAPI(version=VERSION)
 
 # NOTE: single-worker only. For multi-worker, use Redis/DB.
 JOBS: Dict[str, Dict[str, Any]] = {}
 JOBS_LOCK = asyncio.Lock()
 UPLOADS: Dict[str, Dict[str, Any]] = {}
 UPLOADS_LOCK = asyncio.Lock()
-VERSION = "1.0.2"
 BUNDLES_ROOT = "/app/bundles"
 SERVER_BUNDLES = discover_server_bundles(BUNDLES_ROOT)
 UPLOADS_ROOT = os.path.join(tempfile.gettempdir(), "nilm_training_uploads")
@@ -39,6 +47,12 @@ SERVER_TRAINING = {
     "patience": 5,
     "min_delta": 1e-4,
 }
+LOSS_PROFILE = {
+    "onoff": {"name": "binary_crossentropy"},
+    "power": {"name": "mse"},
+}
+LOSS_PROFILE.update(json.loads(os.environ.get("NILM_TRAINING_LOSSES", "{}")))
+TRAINING_LOSSES = resolve_losses(LOSS_PROFILE)
 
 class TrainPayload(BaseModel):
     appliance_name: str
@@ -397,7 +411,8 @@ async def _run_training_job(job_id: str, payload: TrainPayload, selected_bundle,
             targets_power=payload.targets_power,
             weak_mains=payload.weak_mains,
             settings=payload.settings,
-            head_model_path=selected_bundle.head_model_path,
+            load_head=selected_bundle.load_head,
+            losses=TRAINING_LOSSES,
             epochs=int(SERVER_TRAINING["epochs"]),
             lr=float(SERVER_TRAINING["lr"]),
             batch_size=int(SERVER_TRAINING["batch_size"]),
@@ -406,6 +421,7 @@ async def _run_training_job(job_id: str, payload: TrainPayload, selected_bundle,
             min_delta=float(SERVER_TRAINING["min_delta"]),
             on_progress=push_progress,
         )
+        stats = {**stats, "loss_profile": LOSS_PROFILE}
 
         async with JOBS_LOCK:
             jj = JOBS.get(job_id)

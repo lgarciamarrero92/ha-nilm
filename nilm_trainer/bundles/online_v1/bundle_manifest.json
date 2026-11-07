@@ -2,6 +2,7 @@
   "bundle_id": "online_v1",
   "mode": "online",
   "model_version": 1,
+  "head_implementation": "refquery_dense_v1",
   "saved_at": "2026-03-24T18:50:33Z",
   "display_name": "Online v1",
   "is_default_for_training": true
